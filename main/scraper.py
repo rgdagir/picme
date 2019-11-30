@@ -63,9 +63,25 @@ class Scraper:
             posts = jsonData["graphql"]["hashtag"]["edge_hashtag_to_top_posts"]["edges"]
             for post in posts:
                 self.shortcodes.append(post["node"]["shortcode"])
-            print(self.shortcodes)
+            print(len(self.shortcodes))
         except Exception as e:
-            print("extractShortCodesFromJson: Error parsing: " + str(e))
+            if (resp.status_code == 429):
+                print("Waiting for a minute because one 429 from Instagram won't stop us.")
+                time.sleep(60)
+                print("Retrying request")
+
+                try:
+                    resp = requests.get(url)
+                    resp.raise_for_status()
+                    jsonData = json.loads(resp.text)
+                    posts = jsonData["graphql"]["hashtag"]["edge_hashtag_to_top_posts"]["edges"]
+                    for post in posts:
+                        self.shortcodes.append(post["node"]["shortcode"])
+                    print(len(self.shortcodes))
+                except Exception as e:
+                    print("extractShortCodesFromJson: Retrial failed: " + str(e))
+            else:
+                print("extractShortCodesFromJson: Error: " + str(e))
 
     def extractShortCodesFromCsv(self, filename):
         with open(filename) as f:
@@ -192,7 +208,7 @@ if __name__  == "__main__":
         newPost = scraper.getPostRequestBody(shortcode)
         if newPost != None:
             posts.append(scraper.getPostRequestBody(shortcode))
-    scraper.writeToCsv("datasets/theNEWgreatdataset.csv", posts)
+    scraper.writeToCsv("datasets/hashtags4FULL.csv", posts)
     # scraper = Scraper()
     # codesFromFile = scraper.parseFlags(len(sys.argv), sys.argv)
     # if (codesFromFile):

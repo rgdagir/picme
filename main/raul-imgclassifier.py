@@ -80,19 +80,20 @@ def trainModel(x_train, y_train, x_test, y_test):
     model.add(MaxPooling2D(pool_size=(2, 2)))
     model.add(Conv2D(128, kernel_size=3, activation='relu'))
     model.add(Flatten())
-    model.add(Dense(10, activation='softmax'))
+    model.add(Dense(100, activation='softmax'))
 
     #compile model using accuracy to measure model performance
     model.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['accuracy'])
 
     #train the model
-    model.fit(x_train, y_train, validation_data=(x_test, y_test), epochs=10)
+    model.fit(x_train, y_train, validation_data=(x_test, y_test), epochs=15)
     model.save(MODEL_PATH)
-    return model, x_dev, y_dev
+    return model
 
 def predict(model, x_dev, y_dev):
+    print(f"y_dev: {y_dev}")
     actualBestImageIndex = np.argmax(y_dev)
-    print("theoretical best image index: " + actualBestImageIndex)
+    print(f"theoretical best image index: {actualBestImageIndex}")
 
     predictions = model.predict(x_dev)
     
@@ -112,7 +113,7 @@ def predict(model, x_dev, y_dev):
                 maxProbsForMaxBucket = maxResult
                 predictedImageIndex = i
 
-    print("predictedImageIndex: " + predictedImageIndex)
+    print(f"predictedImageIndex: {predictedImageIndex}")
     plt.figure()
     plt.imshow(x_dev[predictedImageIndex])
     plt.figure()
@@ -134,11 +135,11 @@ def splitDataset(allImgs, allResults):
     return (x_train, x_dev, x_test), (y_train, y_dev, y_test)
 
 if __name__ == "__main__":
-    if (len(sys.argv) != 2):
+    if (len(sys.argv) < 2):
         print("Don't forget the flag!")
         sys.exit(0)
     if (sys.argv[1] == "-d"):
-        allImgs, allResults = downloadImages('datasets/alexanderthegreatdataset.csv')
+        allImgs, allResults = downloadImages(sys.argv[2])
         x_train, x_dev, x_test, y_train, y_dev, y_test, y_train_one_hot, y_test_one_hot = preprocess(allImgs, allResults)
         model = trainModel(x_train, y_train_one_hot, x_test, y_test_one_hot)
     elif (sys.argv[1] == "-f"):
@@ -146,9 +147,11 @@ if __name__ == "__main__":
         x_train, x_dev, x_test, y_train, y_dev, y_test, y_train_one_hot, y_test_one_hot = preprocess(allImgs, allResults)
         model = trainModel(x_train, y_train_one_hot, x_test, y_test_one_hot)
     elif (sys.argv[1] == "-m"):
+        allImgs, allResults = loadFromFiles()
         x_train, x_dev, x_test, y_train, y_dev, y_test, y_train_one_hot, y_test_one_hot = preprocess(allImgs, allResults)
         model = load_model(MODEL_PATH)
     else:
         print("Invalid flag, mate!")
+        sys.exit(0)
     
-    predict(model, x_dev, y_dev)
+    predict(model, x_test, y_test)
