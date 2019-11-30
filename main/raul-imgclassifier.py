@@ -22,6 +22,7 @@ def downloadImages(dataset):
         totalImgs = 0
         correctShape = 0
         for row in csv.DictReader(f):
+            print(totalImgs)
             totalImgs += 1
             try:
                 image = imageProcess.Image(row["imgUrl"], True)
@@ -34,6 +35,7 @@ def downloadImages(dataset):
                 image_rescaled = resize(image.skimageImage, (TARGET_X, TARGET_Y),anti_aliasing=False)
             except Exception as e:
                 notProcessed += 1
+                print(e)
                 continue
             allImgs.append(image_rescaled)
             allResults.append(float(row["likeRatio"]))
