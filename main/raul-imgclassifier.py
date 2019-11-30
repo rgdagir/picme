@@ -32,15 +32,12 @@ def downloadImages(dataset):
                 #     continue
                 # image_rescaled = rescale(image.skimageImage, RESIZE_FACTOR, anti_aliasing=False, multichannel=True)
                 image_rescaled = resize(image.skimageImage, (TARGET_X, TARGET_Y),anti_aliasing=False)
-                correctShape += 1
             except Exception as e:
                 notProcessed += 1
                 continue
             allImgs.append(image_rescaled)
             allResults.append(float(row["likeRatio"]))
-    print(f"not processed: {notProcessed/totalImgs}")
-    print(f"correct shape total: {correctShape}")
-    print(f"correct shape ratio: {correctShape/totalImgs}")
+    print("not processed: " + str(notProcessed/totalImgs))
     np.save("allImgs.npy", allImgs)
     np.save("allResults.npy", allResults)
     return allImgs, allResults
@@ -88,11 +85,12 @@ def trainModel(x_train, y_train, x_test, y_test):
 
     #train the model
     model.fit(x_train, y_train, validation_data=(x_test, y_test), epochs=10)
+    model.save(MODEL_PATH)
     return model, x_dev, y_dev
 
 def predict(model, x_dev, y_dev):
     actualBestImageIndex = np.argmax(y_dev)
-    print(f"theoretical best image index: {actualBestImageIndex}")
+    print("theoretical best image index: " + actualBestImageIndex)
 
     predictions = model.predict(x_dev)
     
@@ -112,7 +110,7 @@ def predict(model, x_dev, y_dev):
                 maxProbsForMaxBucket = maxResult
                 predictedImageIndex = i
 
-    print(f"predictedImageIndex: {predictedImageIndex}")
+    print("predictedImageIndex: " + predictedImageIndex)
     plt.figure()
     plt.imshow(x_dev[predictedImageIndex])
     plt.figure()
@@ -138,7 +136,7 @@ if __name__ == "__main__":
         print("Don't forget the flag!")
         sys.exit(0)
     if (sys.argv[1] == "-d"):
-        allImgs, allResults = downloadImages('datasets/neuralnet-firstdataset.csv')
+        allImgs, allResults = downloadImages('datasets/alexanderthegreatdataset.csv')
         x_train, x_dev, x_test, y_train, y_dev, y_test, y_train_one_hot, y_test_one_hot = preprocess(allImgs, allResults)
         model = trainModel(x_train, y_train_one_hot, x_test, y_test_one_hot)
     elif (sys.argv[1] == "-f"):
