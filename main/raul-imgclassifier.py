@@ -3,7 +3,7 @@ import numpy as np
 import imageprocess as imageProcess
 import csv
 from skimage.transform import rescale, resize, downscale_local_mean
-from keras.models import Sequential
+from keras.models import Sequential, load_model
 from keras.layers import Dense, Conv2D, Flatten, MaxPooling2D
 import matplotlib.pyplot as plt
 import math
@@ -11,6 +11,7 @@ from sklearn.metrics import log_loss
 
 TARGET_X = 270
 TARGET_Y = 270
+MODEL_PATH="models/model.h5"
 
 def downloadImages(dataset):
     print('Start reading features')
@@ -42,64 +43,32 @@ def downloadImages(dataset):
     print(f"correct shape ratio: {correctShape/totalImgs}")
     np.save("allImgs.npy", allImgs)
     np.save("allResults.npy", allResults)
-    return (allImgs, allResults)
+    return allImgs, allResults
 
 def loadFromFiles():
     allImgs = np.load("allImgs.npy")
     allResults = np.load("allResults.npy")
     return allImgs, allResults
 
-def trainModel(allImgs, allResults):
-    
-
-    # TODO DEVSET
-    (x_train, x_dev, x_test), (y_train, y_dev, y_test) = splitDataset(allImgs, allResults)
-
-
-    #reshape data to fit model
-    # NO NEED TO CALL RESHAPE BECAUSE ALL IMAGES HAVE BEEN PREVIOUSLY RESIZED
-    # x_train = x_train.reshape(len(x_train),int(1080*RESIZE_FACTOR),int(1080*RESIZE_FACTOR),3)
-    # x_test = x_test.reshape(len(x_test),int(1080*RESIZE_FACTOR),int(1080*RESIZE_FACTOR),3)
-
-
-    #one-hot encode target column
+def oneHotEncoding(arr):
     oneHots = []
     indices = []
-    for y in y_train:
-        # 10 buckets
-        # print(y) 
-        print(f"y: {y} \nlog: {math.log(y)} \nneg log: {-math.log(y)} \n log%10: {-math.log(y)%10}---------")
-        index = int(math.log(y))%10
-        # print(index)
-        indices.append(index)
+    for y in arr:
+        index = int(y*100)%100
         oneHot = []
-        for i in range(10):
+        for i in range(100):
             oneHot.append(0 if i != index else 1)
         oneHots.append(oneHot)
-    y_train = np.array(oneHots)
-    print(f"indices: {sorted(indices)}")
-    # plt.figure()
-    # plt.hist(indices,[i for i in range(10)])
-    # plt.show()
+    return np.array(oneHots)
 
-    oneHots = []
-    test_indices = []
-    for y in y_test:
-        # 10 buckets
-        index = int(math.log(y))%10
-        test_indices.append(index)
-        oneHot = []
-        for i in range(10):
-            oneHot.append(0 if i != index else 1)
-        oneHots.append(oneHot)
-    y_test = np.array(oneHots)
-    print(f"test indices: {sorted(test_indices)}")
-    # plt.figure()
-    # plt.hist(test_indices,[i for i in range(10)])
-    # plt.show()
+def preprocess(allImgs, allResults):
+    (x_train, x_dev, x_test), (y_train, y_dev, y_test) = splitDataset(allImgs, allResults)
 
-    # assert False
+    y_train_one_hot = oneHotEncoding(y_train)
+    y_test_one_hot = oneHotEncoding(y_test)
+    return x_train, x_dev, x_test, y_train, y_dev, y_test, y_train_one_hot, y_test_one_hot
 
+def trainModel(x_train, y_train, x_test, y_test):
     #create model
     model = Sequential()
 
@@ -122,54 +91,14 @@ def trainModel(allImgs, allResults):
     return model, x_dev, y_dev
 
 def predict(model, x_dev, y_dev):
-    # display x_dev bc humans cant see arrays of pixels
-    # for image in x_dev:
-    #     plt.figure()
-    #     plt.imshow(image)
-    # plt.show()
-    oneHotsDev = []
-    for y in y_dev:
-        # 10 buckets
-        index = int(math.log(y))%10
-        oneHotDev = []
-        for i in range(10):
-            oneHotDev.append(0 if i != index else 1)
-        oneHotsDev.append(oneHotDev)
-    # print(f"oneHotDev: {oneHotsDev}")
-
-    print(y_dev)
-    theoreticalBestImageIndex = np.argmax(y_dev)
-    print(f"theoretical best image index: {theoreticalBestImageIndex}")
+    actualBestImageIndex = np.argmax(y_dev)
+    print(f"theoretical best image index: {actualBestImageIndex}")
 
     predictions = model.predict(x_dev)
-    # print([[round(element,2) for element in prediction] for prediction in list(predictions)])
-
-    avg_log_loss = 0
-    for i in range(len(predictions)):
-        prediction = predictions[i]
-        # print(f"prediction: {[round(element,2) for element in prediction]}")
-        actual = oneHotsDev[i]
-        # print(f"actual: {actual}")
-        log_loss_error = 0 if 1.0 in prediction else log_loss(actual, prediction)
-        # print(f"log_loss_error: {log_loss_error}")
-        avg_log_loss += log_loss_error
-    avg_log_loss /= len(predictions)
-    print(f"Test avg_log_loss: {avg_log_loss}")
     
-    scores = []
-    for prediction in predictions:
-        scores.append(np.dot(prediction, [i for i in range(1,11)]))
-    scores = np.array(scores)
-    dotProdIndex = np.argmax(scores)
-    print(f"scores: {scores}")
-    print(f"dotprodindex: {dotProdIndex}")
-    plt.figure()
-    plt.imshow(x_dev[dotProdIndex])
-    plt.show()
-
     maxBucket = 0
     maxProbsForMaxBucket = 0.0
-    idealImageIndex = 0
+    predictedImageIndex = 0
     for i in range(len(predictions)):
         prediction = predictions[i]
         maxResultIndex = np.argmax(prediction)
@@ -177,18 +106,18 @@ def predict(model, x_dev, y_dev):
         if maxBucket < maxResultIndex:
             maxBucket = maxResultIndex
             maxProbsForMaxBucket = maxResult
-            idealImageIndex = i
+            predictedImageIndex = i
         elif maxBucket == maxResultIndex:
             if maxProbsForMaxBucket < maxResult:
                 maxProbsForMaxBucket = maxResult
-                idealImageIndex = i
+                predictedImageIndex = i
 
-    print(f"idealImageIndex: {idealImageIndex}")
-    # plt.figure()
-    # plt.imshow(x_dev[idealImageIndex])
-    # plt.figure()
-    # plt.imshow(x_dev[theoreticalBestImageIndex])
-    # plt.show()
+    print(f"predictedImageIndex: {predictedImageIndex}")
+    plt.figure()
+    plt.imshow(x_dev[predictedImageIndex])
+    plt.figure()
+    plt.imshow(x_dev[actualBestImageIndex])
+    plt.show()
 
 
 def splitDataset(allImgs, allResults):
@@ -210,7 +139,16 @@ if __name__ == "__main__":
         sys.exit(0)
     if (sys.argv[1] == "-d"):
         allImgs, allResults = downloadImages('datasets/neuralnet-firstdataset.csv')
-    else: #load from file
+        x_train, x_dev, x_test, y_train, y_dev, y_test, y_train_one_hot, y_test_one_hot = preprocess(allImgs, allResults)
+        model = trainModel(x_train, y_train_one_hot, x_test, y_test_one_hot)
+    elif (sys.argv[1] == "-f"):
         allImgs, allResults = loadFromFiles()
-    model, x_dev, y_dev = trainModel(allImgs, allResults)
+        x_train, x_dev, x_test, y_train, y_dev, y_test, y_train_one_hot, y_test_one_hot = preprocess(allImgs, allResults)
+        model = trainModel(x_train, y_train_one_hot, x_test, y_test_one_hot)
+    elif (sys.argv[1] == "-m"):
+        x_train, x_dev, x_test, y_train, y_dev, y_test, y_train_one_hot, y_test_one_hot = preprocess(allImgs, allResults)
+        model = load_model(MODEL_PATH)
+    else:
+        print("Invalid flag, mate!")
+    
     predict(model, x_dev, y_dev)
