@@ -11,7 +11,6 @@ from sklearn.metrics import log_loss
 
 TARGET_X = 270
 TARGET_Y = 270
-MODEL_PATH="models/model.h5"
 
 def downloadImages(dataset):
     print('Start reading features')
@@ -44,9 +43,9 @@ def downloadImages(dataset):
     np.save(f"allResults_{dataset[9:-4]}.npy", allResults)
     return allImgs, allResults
 
-def loadFromFiles():
-    allImgs = np.load("allImgs.npy")
-    allResults = np.load("allResults.npy")
+def loadFromFile(filename):
+    allImgs = np.load(filename)
+    allResults = np.load(filename)
     return allImgs, allResults
 
 def oneHotEncoding(arr):
@@ -145,13 +144,15 @@ if __name__ == "__main__":
         x_train, x_dev, x_test, y_train, y_dev, y_test, y_train_one_hot, y_test_one_hot = preprocess(allImgs, allResults)
         model = trainModel(x_train, y_train_one_hot, x_test, y_test_one_hot)
     elif (sys.argv[1] == "-f"):
-        allImgs, allResults = loadFromFiles()
+        allImgs, allResults = loadFromFile(sys.argv[2])
         x_train, x_dev, x_test, y_train, y_dev, y_test, y_train_one_hot, y_test_one_hot = preprocess(allImgs, allResults)
-        model = trainModel(x_train, y_train_one_hot, x_test, y_test_one_hot)
-    elif (sys.argv[1] == "-m"):
-        allImgs, allResults = loadFromFiles()
-        x_train, x_dev, x_test, y_train, y_dev, y_test, y_train_one_hot, y_test_one_hot = preprocess(allImgs, allResults)
-        model = load_model(MODEL_PATH)
+        
+        if (sys.argv[3] == "-m"):
+            allImgs, allResults = loadFromFile(sys.argv[4])
+            x_train, x_dev, x_test, y_train, y_dev, y_test, y_train_one_hot, y_test_one_hot = preprocess(allImgs, allResults)
+            model = load_model(sys.argv3)
+        else:
+            model = trainModel(x_train, y_train_one_hot, x_test, y_test_one_hot)    
     else:
         print("Invalid flag, mate!")
         sys.exit(0)
