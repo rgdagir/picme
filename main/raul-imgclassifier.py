@@ -40,8 +40,8 @@ def downloadImages(dataset):
             allImgs.append(image_rescaled)
             allResults.append(float(row["likeRatio"]))
     print("not processed: " + str(notProcessed/totalImgs))
-    np.save("allImgs.npy", allImgs)
-    np.save("allResults.npy", allResults)
+    np.save(f"allImgs_{dataset[9:-4]}.npy", allImgs)
+    np.save(f"allResults_{dataset[9:-4]}.npy", allResults)
     return allImgs, allResults
 
 def loadFromFiles():
@@ -79,6 +79,8 @@ def trainModel(x_train, y_train, x_test, y_test):
     model.add(Conv2D(64, kernel_size=3, activation='relu'))
     model.add(MaxPooling2D(pool_size=(2, 2)))
     model.add(Conv2D(128, kernel_size=3, activation='relu'))
+    model.add(MaxPooling2D(pool_size=(2, 2)))
+    model.add(Conv2D(256, kernel_size=3, activation='relu'))
     model.add(Flatten())
     model.add(Dense(100, activation='softmax'))
 
@@ -97,14 +99,14 @@ def predict(model, x_dev, y_dev):
 
     predictions = model.predict(x_dev)
     
-    maxBucket = 0
+    maxBucket = 0 
     maxProbsForMaxBucket = 0.0
     predictedImageIndex = 0
     for i in range(len(predictions)):
         prediction = predictions[i]
         maxResultIndex = np.argmax(prediction)
         maxResult = prediction[maxResultIndex]
-        if maxBucket < maxResultIndex:
+        if maxBucket <= maxResultIndex:
             maxBucket = maxResultIndex
             maxProbsForMaxBucket = maxResult
             predictedImageIndex = i

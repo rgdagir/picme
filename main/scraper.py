@@ -208,7 +208,7 @@ if __name__  == "__main__":
         newPost = scraper.getPostRequestBody(shortcode)
         if newPost != None:
             posts.append(scraper.getPostRequestBody(shortcode))
-    scraper.writeToCsv("datasets/hashtags4FULL.csv", posts)
+    scraper.writeToCsv(f"datasets/{sys.argv[1][:-4]}FULL.csv", posts)
     # scraper = Scraper()
     # codesFromFile = scraper.parseFlags(len(sys.argv), sys.argv)
     # if (codesFromFile):
