@@ -43,9 +43,9 @@ def downloadImages(dataset):
     np.save(f"allResults_{dataset[9:-4]}.npy", allResults)
     return allImgs, allResults
 
-def loadFromFile(filename):
-    allImgs = np.load(filename)
-    allResults = np.load(filename)
+def loadFromFile(imgsfile, resultsfile):
+    allImgs = np.load(imgsfile)
+    allResults = np.load(resultsfile)
     return allImgs, allResults
 
 def oneHotEncoding(arr):
@@ -94,29 +94,43 @@ def trainModel(x_train, y_train, x_test, y_test):
 def predict(model, x_dev, y_dev):
     print(f"y_dev: {y_dev}")
     actualBestImageIndex = np.argmax(y_dev)
+
     print(f"theoretical best image index: {actualBestImageIndex}")
 
     predictions = model.predict(x_dev)
-    
-    maxBucket = 0 
-    maxProbsForMaxBucket = 0.0
-    predictedImageIndex = 0
-    for i in range(len(predictions)):
-        prediction = predictions[i]
-        maxResultIndex = np.argmax(prediction)
-        maxResult = prediction[maxResultIndex]
-        if maxBucket <= maxResultIndex:
-            maxBucket = maxResultIndex
-            maxProbsForMaxBucket = maxResult
-            predictedImageIndex = i
-        elif maxBucket == maxResultIndex:
-            if maxProbsForMaxBucket < maxResult:
-                maxProbsForMaxBucket = maxResult
-                predictedImageIndex = i
 
+    scores = []
+    for prediction in predictions:
+        scores.append(np.dot(prediction, [i for i in range(1,11)]))
+    scores = np.array(scores)
+    predictedImageIndex = np.argmax(scores)
+    print(f"scores: {scores}")
     print(f"predictedImageIndex: {predictedImageIndex}")
     plt.figure()
-    plt.imshow(x_dev[predictedImageIndex])
+    plt.imshow(x_dev[dotProdIndex])
+    plt.show()
+    
+    # maxBucket = 0 
+    # maxProbsForMaxBucket = 0.0
+    # predictedImageIndex = 0
+    # for i in range(len(predictions)):
+    #     prediction = predictions[i]
+    #     maxResultIndex = np.argmax(prediction)
+    #     maxResult = prediction[maxResultIndex]
+    #     if maxBucket <= maxResultIndex:
+    #         maxBucket = maxResultIndex
+    #         maxProbsForMaxBucket = maxResult
+    #         predictedImageIndex = i
+    #     elif maxBucket == maxResultIndex:
+    #         if maxProbsForMaxBucket < maxResult:
+    #             maxProbsForMaxBucket = maxResult
+    #             predictedImageIndex = i
+
+    # print(f"predictedImageIndex: {predictedImageIndex}")
+    # plt.figure()
+    # plt.imshow(x_dev[predictedImageIndex])
+
+
     plt.figure()
     plt.imshow(x_dev[actualBestImageIndex])
     plt.show()
@@ -144,14 +158,12 @@ if __name__ == "__main__":
         x_train, x_dev, x_test, y_train, y_dev, y_test, y_train_one_hot, y_test_one_hot = preprocess(allImgs, allResults)
         model = trainModel(x_train, y_train_one_hot, x_test, y_test_one_hot)
     elif (sys.argv[1] == "-f"):
-        allImgs, allResults = loadFromFile(sys.argv[2])
-        x_train, x_dev, x_test, y_train, y_dev, y_test, y_train_one_hot, y_test_one_hot = preprocess(allImgs, allResults)
-        
-        if (sys.argv[3] == "-m"):
-            allImgs, allResults = loadFromFile(sys.argv[4])
-            x_train, x_dev, x_test, y_train, y_dev, y_test, y_train_one_hot, y_test_one_hot = preprocess(allImgs, allResults)
-            model = load_model(sys.argv3)
-        else:
+        allImgs, allResults = loadFromFile(sys.argv[2], sys.argv[3])
+        x_train, x_dev, x_test, y_train, y_dev, y_test, y_train_one_hot, y_test_one_hot = preprocess(allImgs, allResults)        
+        try:
+            if(sys.argv[4] == "-m"):
+                model = load_model(sys.argv[5])
+        except:
             model = trainModel(x_train, y_train_one_hot, x_test, y_test_one_hot)    
     else:
         print("Invalid flag, mate!")
