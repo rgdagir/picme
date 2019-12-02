@@ -13,8 +13,8 @@ from datetime import datetime
 import textdistance
 from keras.utils.vis_utils import plot_model
 
-TARGET_X = 270
-TARGET_Y = 270
+TARGET_X = 135
+TARGET_Y = 135
 def downloadImages(dataset):
     print('Start reading features')
     with open(dataset) as f:
@@ -209,38 +209,38 @@ def trainModel(modelfilename, x_train, y_train, x_test, y_test):
     model.save(f"models/{modelfilename}.h5")
     return model
 
-def trainModelFeatureVec(modelfilename, x_train, y_train, x_test, y_test):
-    #create model
-    print(x_train[0])
-    print(y_train[0])
-    model = Sequential()
-    drop_prob = .3
-    #add model layers
-    model.add(Conv1D(16, kernel_size=3, activation='relu', input_shape=(len(x_train), len(x_train[0]), 1)))
-    model.add(MaxPooling1D(pool_size=(2), padding="same"))
-    model.add(Dropout(drop_prob))
-    model.add(Conv1D(32, kernel_size=3, activation='relu'))
-    model.add(MaxPooling1D(pool_size=(2), padding="same"))
-    model.add(Dropout(drop_prob))
-    model.add(Conv1D(64, kernel_size=3, activation='relu'))
-    model.add(MaxPooling1D(pool_size=(2), padding="same"))
-    model.add(Dropout(drop_prob))
-    model.add(Conv1D(128, kernel_size=3, activation='relu'))
-    # model.add(MaxPooling2D(pool_size=(2,2)))
-    # model.add(Dropout(drop_prob))
-    # model.add(Conv2D(256, kernel_size=3, activation='relu'))
-    model.add(Flatten())
-    model.add(Dense(100, activation='softmax'))
-                # kernel_regularizer=regularizers.l2(0.01),
-                # activity_regularizer=regularizers.l1(0.01)))
+# def trainModelFeatureVec(modelfilename, x_train, y_train, x_test, y_test):
+#     #create model
+#     print(x_train[0])
+#     print(y_train[0])
+#     model = Sequential()
+#     drop_prob = .3
+#     #add model layers
+#     model.add(Conv1D(16, kernel_size=3, activation='relu', input_shape=(len(x_train), len(x_train[0]), 1)))
+#     model.add(MaxPooling1D(pool_size=(2), padding="same"))
+#     model.add(Dropout(drop_prob))
+#     model.add(Conv1D(32, kernel_size=3, activation='relu'))
+#     model.add(MaxPooling1D(pool_size=(2), padding="same"))
+#     model.add(Dropout(drop_prob))
+#     model.add(Conv1D(64, kernel_size=3, activation='relu'))
+#     model.add(MaxPooling1D(pool_size=(2), padding="same"))
+#     model.add(Dropout(drop_prob))
+#     model.add(Conv1D(128, kernel_size=3, activation='relu'))
+#     # model.add(MaxPooling2D(pool_size=(2,2)))
+#     # model.add(Dropout(drop_prob))
+#     # model.add(Conv2D(256, kernel_size=3, activation='relu'))
+#     model.add(Flatten())
+#     model.add(Dense(100, activation='softmax'))
+#                 # kernel_regularizer=regularizers.l2(0.01),
+#                 # activity_regularizer=regularizers.l1(0.01)))
 
-    #compile model using accuracy to measure model performance
-    model.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['accuracy'])
+#     #compile model using accuracy to measure model performance
+#     model.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['accuracy'])
 
-    #train the model
-    model.fit(x_train, y_train, validation_data=(x_test, y_test), epochs=20)
-    model.save(f"models/{modelfilename}.h5")
-    return model
+#     #train the model
+#     model.fit(x_train, y_train, validation_data=(x_test, y_test), epochs=20)
+#     model.save(f"models/{modelfilename}.h5")
+#     return model
 
 def test_model(model, x, y):
     indexed_y = list(enumerate(y))
@@ -348,6 +348,15 @@ def extractDatasetNameCSV(datafilename):
     extracted = extracted[slashIndex:]
     return extracted
 
+def grayscaleResize(allImgs):
+    graySmallImgs = []
+    for img in  allImgs:
+        image_rescaled = resize(img, (TARGET_X, TARGET_Y),anti_aliasing=False)
+        grayscale = rgb2gray(image_rescaled)
+        graySmallImgs.append(grayscale)
+    return np.array(graySmallImgs)
+
+
 if __name__ == "__main__":
     if (len(sys.argv) < 2):
         print("Don't forget the flag!")
@@ -364,6 +373,7 @@ if __name__ == "__main__":
         model = trainModel(extractDatasetNameCSV(sys.argv[2]), x_train, y_train_one_hot, x_test, y_test_one_hot)
     elif (sys.argv[1] == "-f"):
         allImgs, allResults = loadFromFile(sys.argv[2], sys.argv[3])
+        allImgs = grayscaleResize(allImgs)
         x_train, x_dev, x_test, y_train, y_dev, y_test, y_train_one_hot, y_test_one_hot = preprocess(allImgs, allResults)        
         try:
             if(sys.argv[4] == "-m"):
