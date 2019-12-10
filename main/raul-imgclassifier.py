@@ -132,11 +132,13 @@ def extractFeaturesFromDataset(filename):
                     elif key == "likeRatio": # we will append the result at the end
                         continue #allResults.append(float(row[key]))
                     elif (key == "likeCount" or key == "commentCount" or key == "timestamp"):
-                        featureVector.append(row[key])
+                        # featureVector.append(row[key])
+                        continue
                     # this should fail all the time we have a string as the value feature
                     # probably bad style but  python has no better way to check if 
                     # a string contains a float or not
                     else:
+                        continue
                         try:
                             val = float(row[key])
                             featureVector[key] = val
@@ -175,50 +177,26 @@ def extractFeaturesFromDataset(filename):
 def trainModel(modelfilename, x_train, y_train, x_test, y_test, concat=False):
     #create model
     model = Sequential()
-
-    # #add model layers
-    # model.add(Conv2D(32, kernel_size=3, activation='relu', input_shape=(TARGET_X, TARGET_Y,3)))
-    # # model.add(MaxPooling2D(pool_size=(2, 2)))
-    # # model.add(Dropout(0.3))
-    # # model.add(Conv2D(32, kernel_size=3, activation='relu'))
-    # # model.add(MaxPooling2D(pool_size=(2, 2)))
-    # # model.add(Dropout(0.3))
-    # # model.add(Conv2D(64, kernel_size=3, activation='relu'))
-    # # model.add(MaxPooling2D(pool_size=(2, 2)))
-    # # model.add(Dropout(0.3))
-    # # model.add(Conv2D(128, kernel_size=3, activation='relu'))
-    # model.add(Flatten())
-    # model.add(Dense(100, activation='softmax'))
-    #             # kernel_regularizer=regularizers.l2(0.01),
-    #             # activity_regularizer=regularizers.l1(0.01)))
-
     model.add(Conv2D(16, kernel_size=(3,3), input_shape=(TARGET_X, TARGET_Y, 3), activation='relu'))
     model.add(MaxPooling2D(pool_size=(2, 2)))
-    # model.add(BatchNormalization())
-    model.add(Conv2D(32, kernel_size=(3,3), activation='relu'))
+    model.add(Conv2D(32, kernel_size=(3, 3), activation='relu'))
     model.add(MaxPooling2D(pool_size=(2, 2)))
-    # # model.add(BatchNormalization())
-    # model.add(Conv2D(64, kernel_size=(3,3), activation='relu'))
-    # model.add(MaxPooling2D(pool_size=(2, 2)))
-    # # model.add(BatchNormalization())
-    # model.add(Conv2D(128, kernel_size=(3,3), activation='relu'))
-    # model.add(MaxPooling2D(pool_size=(2, 2)))
-    # model.add(BatchNormalization())
+
+    model.add(Conv2D(64, kernel_size=(3, 3), activation='relu'))
+    model.add(MaxPooling2D(pool_size=(2, 2)))
+    model.add(Conv2D(128, kernel_size=(3, 3), activation='relu'))
+    model.add(MaxPooling2D(pool_size=(2, 2)))
     model.add(Flatten())
     model.add(Dense(1250, activation='relu'))
     model.add(Dropout(.5))
-    # model.add(BatchNormalization())
-    model.add(Dense(500, activation='relu'))
+    model.add(Dense(250, activation='relu'))
     model.add(Dropout(.25))
-    # model.add(BatchNormalization())
-    model.add(Dense(500, activation='relu'))
-    # model.add(BatchNormalization())
 
     if concat:
-        model.add(Dense(100, activation = 'relu'))
+        model.add(Dense(10, activation='relu'))
         return model
     else:
-        model.add(Dense(100, activation = 'softmax'))
+        model.add(Dense(4, activation = 'softmax'))
 
     es = EarlyStopping(monitor='val_loss', mode='min', verbose=1)
     #compile model using accuracy to measure model performance
@@ -265,16 +243,16 @@ def trainMdModel(modelfilename, x_train, y_train, x_test, y_test, concat=False):
     #create model
     model = Sequential()
 
-    model = Sequential()
-    model.add(Dense(400, input_dim=10, activation="relu"))
-    model.add(Dense(300, activation="relu"))
-    model.add(Dense(300, activation="relu"))
-    model.add(Dense(200, activation="relu"))
+    model.add(Dense(200, input_dim=8, activation="relu"))
+    model.add(Dense(150, activation="relu"))
+    model.add(Dense(125, activation="relu"))
+    model.add(Dense(110, activation="relu"))
+    model.add(Dense(105, activation="relu"))
     if concat:
-        model.add(Dense(100, activation = 'relu'))
+        model.add(Dense(10, activation = "relu"))
         return model
     else:
-        model.add(Dense(100, activation = 'softmax'))
+        model.add(Dense(4, activation = 'softmax'))
 
     es = EarlyStopping(monitor='val_loss', mode='min', verbose=1)
     #compile model using accuracy to measure model performance
@@ -314,7 +292,7 @@ def trainMdModel(modelfilename, x_train, y_train, x_test, y_test, concat=False):
     plt.legend(['train', 'validation'], loc='upper left')
     plt.savefig(f"models/{modelfilename}_metadata_loss.png")
 
-    model.save(f"models/{modelfilename}.h5")
+    model.save(f"models/{modelfilename}_metadata_plot.h5")
     return model
 
 def test_model(model, x, y):
@@ -401,19 +379,22 @@ def concatenatedModelMain():
         # assert(imgY_train, mdY_train) # raul-imgclassifier.py:537: SyntaxWarning: assertion is always true, perhaps remove parentheses?
         # imgX_train = imgX_train.reshape(imgX_train.shape[0], TARGET_X, TARGET_Y, 3)
         # imgX_test = imgX_test.reshape(imgX_test.shape[0], TARGET_X, TARGET_Y, 3)
+        
         imageModel = trainModel(extractDatasetNameCSV(sys.argv[2]), imgX_train, imgY_train_one_hot, imgX_test, imgY_test_one_hot, True)
         mdModel = trainMdModel(extractDatasetNameCSV(sys.argv[2]), mdX_train, mdY_train_one_hot, mdX_test, mdY_test_one_hot, True)
 
         combinedInput = concatenate([mdModel.output, imageModel.output])
-        x = Dense(100, activation="relu")(combinedInput)
-        x = Dense(100, activation="softmax")(x)
+
+        x = Dense(10, activation="relu")(combinedInput)
+        x = Dense(10, activation="softmax")(x)
         concatModel = Model(inputs=[mdModel.input, imageModel.input], outputs=x)
-        concatModel.compile(optimizer=Adam(lr=1e-4, decay=1e-4 / 200), loss='categorical_crossentropy', metrics=['accuracy', 'cosine_proximity'])
+        concatModel.compile(optimizer=Adam(lr=1e-4, decay=1e-4 / 200), loss='mean_squared_error', metrics=['accuracy'])
         concatModel.fit([mdX_train, imgX_train], mdY_train,validation_data=([mdX_test, imgX_test], mdY_test), epochs=100, batch_size=8)
 
 
     elif (sys.argv[1] == "-f"):
         allImgs, allResults, featureVectors = loadFromFile([sys.argv[2], sys.argv[3], sys.argv[4]])
+
         # allImgs = grayscaleResize(allImgs)
         imgX_train, imgX_dev, imgX_test, imgY_train, imgY_dev, imgY_test, imgY_train_one_hot, imgY_test_one_hot = splitAndPrep(allImgs, allResults)
         mdX_train, mdX_dev, mdX_test, mdY_train, mdY_dev, mdY_test, mdY_train_one_hot, mdY_test_one_hot = splitAndPrep(featureVectors, allResults)
@@ -424,12 +405,13 @@ def concatenatedModelMain():
         mdModel = trainMdModel(extractDatasetNameCSV(sys.argv[2]), mdX_train, mdY_train_one_hot, mdX_test, mdY_test_one_hot, True)
 
         combinedInput = concatenate([mdModel.output, imageModel.output])
-        x = Dense(250, activation="relu")(combinedInput)
-        x = Dense(100, activation="softmax")(x)
+
+        x = Dense(10, activation="relu")(combinedInput)
+        x = Dense(10, activation="softmax")(x)
         concatModel = Model(inputs=[mdModel.input, imageModel.input], outputs=x)
         plot_model(concatModel, to_file=f"models/concatModel_plot.png", show_shapes=True, show_layer_names=True)
-        concatModel.compile(optimizer=Adam(lr=1e-4, decay=1e-4 / 200), loss='categorical_crossentropy', metrics=['accuracy', 'cosine_proximity'])
-        concatModel.fit([mdX_train, imgX_train], mdY_train,validation_data=([mdX_test, imgX_test], mdY_test), epochs=100, batch_size=8)
+        concatModel.compile(optimizer=Adam(lr=1e-4, decay=1e-4 / 200), loss='categorical_crossentropy', metrics=['accuracy'])
+        concatModel.fit([mdX_train, imgX_train], imgY_train_one_hot,validation_data=([mdX_test, imgX_test], imgY_test_one_hot), epochs=100, batch_size=8)
 
         # try:
         #     if(sys.argv[4] == "-m"):

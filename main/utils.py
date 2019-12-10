@@ -1,4 +1,5 @@
 import numpy as np
+import math
 from skimage.color import rgb2gray
 
 def splitAndPrep(allImgs, allResults):
@@ -24,9 +25,9 @@ def loadFromFile(files):
 def oneHotEncoding(arr):
     oneHots = []
     for y in arr:
-        index = int(y*100)%100
+        index = int(-math.log(y))%10
         oneHot = []
-        for i in range(100):
+        for i in range(10):
             oneHot.append(0 if i != index else 1)
         oneHots.append(oneHot)
     return np.array(oneHots)
