@@ -654,7 +654,35 @@ def concatenatedModelMain():
         x = Dense(10, activation="softmax")(x)
         concatModel = Model(inputs=[mdModel.input, imageModel.input], outputs=x)
         concatModel.compile(optimizer=Adam(lr=1e-4, decay=1e-4 / 200), loss='mean_squared_error', metrics=['accuracy'])
-        concatModel.fit([mdX_train, imgX_train], mdY_train,validation_data=([mdX_test, imgX_test], mdY_test), epochs=100, batch_size=8)
+        history  = concatModel.fit([mdX_train, imgX_train], mdY_train,validation_data=([mdX_test, imgX_test], mdY_test), epochs=100, batch_size=8)
+        plt.figure()
+        plt.plot(history.history['accuracy'])
+        plt.plot(history.history['val_accuracy'])
+        plt.title('model accuracy')
+        plt.ylabel('accuracy')
+        plt.xlabel('epoch')
+        plt.legend(['train', 'validation'], loc='upper left')
+        plt.savefig(f"models/concat_{modelfilename}_accuracy.png")
+
+        plt.figure()
+        plt.plot(history.history['cosine_proximity'])
+        plt.plot(history.history['val_cosine_proximity'])
+        plt.title('cosine proximity')
+        plt.ylabel('accuracy')
+        plt.xlabel('epoch')
+        plt.legend(['train', 'validation'], loc='upper left')
+        plt.savefig(f"models/concat_{modelfilename}_cosineproximity.png")
+
+        plt.figure()
+        plt.plot(history.history['loss'])
+        plt.plot(history.history['val_loss'])
+        plt.title('model loss')
+        plt.ylabel('loss')
+        plt.xlabel('epoch')
+        plt.legend(['train', 'validation'], loc='upper left')
+        plt.savefig(f"models/concat_{modelfilename}_loss.png")
+
+        model.save(f"models/concat_{modelfilename}.h5")
 
 
     elif (sys.argv[1] == "-f"):
@@ -725,4 +753,4 @@ def oldmain():
     #     test_model(model, split_test_set[i], split_result_test[i])
 
 if __name__ == "__main__":
-    oldmain()
+    concatenatedModelMain()
