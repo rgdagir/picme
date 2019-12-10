@@ -63,11 +63,120 @@ def downloadImages(dataset):
     np.save(f"allResults_{dataset[slashIndex:-4]}.npy", allResults)
     return allImgs, allResults
 
-############################################################
-# Feature extraction
+# ############################################################
+# # Feature extraction
+# def extractFeaturesFromDataset(filename):
+#     print("PELE MEJOR QUE MARADONA!")
+#     net = imageProcess.runFaceDetectDNN()
+#     print('Start reading features')
+#     with open(filename) as f:
+#         featureVectors = []
+#         results = []
+#         allImgs = []
+#         allResults = []
+#         shapes = []
+#         notProcessed = 0
+#         totalImgs = 0
+#         correctShape = 0
+#         for row in csv.DictReader(f):
+#             if (float(row["likeRatio"]) > 1.):
+#                 continue
+#             print(totalImgs)
+#             totalImgs += 1
+#             featureVector = []
+#             somethingFailed = False
+#             for key in row: #  each row is a dict
+#                 try:
+#                     if (key == "timestamp"): 
+#                         hourOfDay = datetime.fromtimestamp(int(row[key])).hour
+#                         between2and6 = (hourOfDay >= 2 and hourOfDay < 6)
+#                         between6and10 = (hourOfDay >= 6 and hourOfDay < 10)
+#                         between10and14 = (hourOfDay >= 10 and hourOfDay < 14)
+#                         between14and18 = (hourOfDay >= 14 and hourOfDay < 18)
+#                         between18and22 = (hourOfDay >= 18 and hourOfDay < 22)
+#                         between22and2 = (hourOfDay >= 22) or (hourOfDay < 2)
+#                         featureVector.append(int(between2and6))
+#                         featureVector.append(int(between6and10))
+#                         # featureVector['between10and14'] = int(between10and14)
+#                         featureVector.append(int(between14and18)) 
+#                         featureVector.append(int(between18and22))
+#                         featureVector.append(int(between22and2))
+                
+                    
+#                     elif (key == "caption"):
+#                         # featureVector["captionLength"] = (len(row[key]))
+#                         featureVector.append(1 if "food" in row[key].lower() else 0)
+#                         featureVector.append(1 if "follow" in row[key].lower() else 0)
+#                         featureVector.append(1 if "ad" in row[key].lower() else 0)
+                    
+#                     # if key == "hashtags":
+#                     #     hashtags = ast.literal_eval(row[key])
+#                     #     hashtags = [n.strip() for n in hashtags]
+#                         # featureVector["numHash"] = 1 if len(hashtags) == 0 else 1./len(hashtags)
+
+#                     elif key == "imgUrl":
+#                         image = imageProcess.Image(row[key], True)
+#                         imageShape = image.getImageShape()
+#                         shapes.append((imageShape[0], imageShape[1]))
+#                         print(f"shape: ({imageShape[0]}, {imageShape[1]})")
+#                         # squaredImage = imageShape[0] == imageShape[1]
+#                         # isRgb = imageShape[2] == 3;
+#                         # if (not squaredImage) or (not isRgb):    
+#                         #     continue
+#                         # image_rescaled = rescale(image.skimageImage, RESIZE_FACTOR, anti_aliasing=False, multichannel=True)
+#                         image_rescaled = resize(image.skimageImage, (TARGET_X, TARGET_Y),anti_aliasing=False)
+#                         # featureVector.append(imageProcess.extractSectorsFeature(image, 20, 20))
+#                         # faceInfo = imageProcess.extractFaceInfo(image, net)
+#                         # featureVector.append(imageProcess.extractNumFaces(faceInfo))
+#                         # featureVector.append(imageProcess.extractTotalPercentAreaFaces(faceInfo))
+#                     elif key == "likeRatio": # we will append the result at the end
+#                         continue #allResults.append(float(row[key]))
+#                     elif (key == "likeCount" or key == "commentCount" or key == "timestamp"):
+#                         # featureVector.append(row[key])
+#                         continue
+#                     # this should fail all the time we have a string as the value feature
+#                     # probably bad style but  python has no better way to check if 
+#                     # a string contains a float or not
+#                     else:
+#                         continue
+#                         try:
+#                             val = float(row[key])
+#                             featureVector[key] = val
+#                         except Exception as e:
+#                             continue
+#                 except Exception as e:
+#                     somethingFailed = True
+#                     notProcessed += 1
+#                     print(e)
+#                     break
+#             if (somethingFailed):
+#                 continue
+#             label = float(row["likeRatio"])
+#             allResults.append(label)
+#             allImgs.append(image_rescaled)
+#             featureVectors.append(featureVector)
+#         slashIndex = filename.find("/")
+#         slashIndex += 1
+#         featureVectors = np.array(featureVectors)
+#         allResults = np.array(allResults)
+#         allImgs = np.array(allImgs)
+
+#         plt.figure()    
+#         plt.title('image shape distribution')
+#         plt.ylabel('width')
+#         plt.xlabel('height')
+#         plt.scatter(*zip(*shapes))
+#         plt.savefig(f"datasets/{filename[slashIndex:-4]}_distribution.png")
+#         np.save(f"allImgs_{filename[slashIndex:-4]}.npy", allImgs)
+#         np.save(f"allResults_{filename[slashIndex:-4]}.npy", allResults)
+#         np.save(f"featureVectors_{filename[slashIndex:-4]}.npy", featureVectors)
+#         return allImgs, featureVectors, allResults
+######################
+# Feature extraction #
+######################
 def extractFeaturesFromDataset(filename):
     print("PELE MEJOR QUE MARADONA!")
-    net = imageProcess.runFaceDetectDNN()
+    # net = imageProcess.runFaceDetectDNN()
     print('Start reading features')
     with open(filename) as f:
         featureVectors = []
@@ -79,15 +188,15 @@ def extractFeaturesFromDataset(filename):
         totalImgs = 0
         correctShape = 0
         for row in csv.DictReader(f):
-            if (float(row["likeRatio"]) > 1.):
-                continue
             print(totalImgs)
             totalImgs += 1
             featureVector = []
             somethingFailed = False
+            order = []
             for key in row: #  each row is a dict
                 try:
                     if (key == "timestamp"): 
+                        order.append(key)
                         hourOfDay = datetime.fromtimestamp(int(row[key])).hour
                         between2and6 = (hourOfDay >= 2 and hourOfDay < 6)
                         between6and10 = (hourOfDay >= 6 and hourOfDay < 10)
@@ -97,24 +206,170 @@ def extractFeaturesFromDataset(filename):
                         between22and2 = (hourOfDay >= 22) or (hourOfDay < 2)
                         featureVector.append(int(between2and6))
                         featureVector.append(int(between6and10))
-                        # featureVector['between10and14'] = int(between10and14)
-                        featureVector.append(int(between14and18)) 
+                        featureVector.append(int(between10and14))
+                        featureVector.append(int(between14and18))
                         featureVector.append(int(between18and22))
                         featureVector.append(int(between22and2))
+
+                        dayOfWeek = ep_to_day(int(row[key]))
+                        if dayOfWeek == "Sunday":
+                            featureVector.append(1)
+                        else:
+                            featureVector.append(0)                        
+                        if dayOfWeek == "Monday":
+                            featureVector.append(1)
+                        else:
+                            featureVector.append(0)
+                        if dayOfWeek == "Tuesday":
+                            featureVector.append(1)
+                        else:
+                            featureVector.append(0)
+                        if dayOfWeek == "Wednesday":
+                            featureVector.append(1)
+                        else:
+                            featureVector.append(0)
+                        if dayOfWeek == "Thursday":
+                            featureVector.append(1)
+                        else:
+                            featureVector.append(0)
+                        if dayOfWeek == "Friday":
+                            featureVector.append(1)
+                        else:
+                            featureVector.append(0)
+                        if dayOfWeek == "Saturday":
+                            featureVector.append(1)
+                        else:
+                            featureVector.append(0)
+
+                        activenessScore 
                 
                     
-                    elif (key == "caption"):
-                        # featureVector["captionLength"] = (len(row[key]))
-                        featureVector.append(1 if "food" in row[key].lower() else 0)
-                        featureVector.append(1 if "follow" in row[key].lower() else 0)
-                        featureVector.append(1 if "ad" in row[key].lower() else 0)
-                    
-                    # if key == "hashtags":
-                    #     hashtags = ast.literal_eval(row[key])
-                    #     hashtags = [n.strip() for n in hashtags]
-                        # featureVector["numHash"] = 1 if len(hashtags) == 0 else 1./len(hashtags)
+                    elif (key == "accessibilityCaption"):
+                        order.append(key)
+                        if "people" in accessibilityCaption:
+                            featureVector.append(1)
+                        else:
+                            featureVector.append(0)
+                        if "and" in accessibilityCaption:
+                            featureVector.append(1)
+                        else:
+                            accessCaptionSubvector.append(0)
+                        if "one" in accessibilityCaption:
+                            featureVector.append(1)
+                        else:
+                            accessCaptionSubvector.append(0)
+                        if "or" in accessibilityCaption:
+                            featureVector.append(1)
+                        else:
+                            accessCaptionSubvector.append(0)
+                        if "more" in accessibilityCaption:
+                            featureVector.append(1)
+                        else:
+                            accessCaptionSubvector.append(0)
+                        if "standing" in accessibilityCaption:
+                            featureVector.append(1)
+                        else:
+                            accessCaptionSubvector.append(0)
+                        if "nature" in accessibilityCaption:
+                            featureVector.append(1)
+                        else:
+                            accessCaptionSubvector.append(0)
+                        if "closeup" in accessibilityCaption:
+                            featureVector.append(1)
+                        else:
+                            accessCaptionSubvector.append(0)
+                        if "sitting" in accessibilityCaption:
+                            featureVector.append(1)
+                        else:
+                            accessCaptionSubvector.append(0)
+                        if "tree" in accessibilityCaption:
+                            featureVector.append(1)
+                        else:
+                            accessCaptionSubvector.append(0)
+                        if "photo" in accessibilityCaption:
+                            featureVector.append(1)
+                        else:
+                            accessCaptionSubvector.append(0)
+                        if "no" in accessibilityCaption:
+                            featureVector.append(1)
+                        else:
+                            accessCaptionSubvector.append(0)
+                        if "description" in accessibilityCaption:
+                            featureVector.append(1)
+                        else:
+                            accessCaptionSubvector.append(0)
+                        if "available" in accessibilityCaption:
+                            featureVector.append(1)
+                        else:
+                            accessCaptionSubvector.append(0)
+                        if "cloud" in accessibilityCaption:
+                            featureVector.append(1)
+                        else:
+                            accessCaptionSubvector.append(0)
+                        if "beard" in accessibilityCaption:
+                            featureVector.append(1)
+                        else:
+                            accessCaptionSubvector.append(0)
+                        if "mountain" in accessibilityCaption:
+                            featureVector.append(1)
+                        else:
+                            accessCaptionSubvector.append(0)
+                        if "child" in accessibilityCaption:
+                            featureVector.append(1)
+                        else:
+                            accessCaptionSubvector.append(0)
+                        if "playing" in accessibilityCaption:
+                            featureVector.append(1)
+                        else:
+                            accessCaptionSubvector.append(0)
+                        if "sports" in accessibilityCaption:
+                            featureVector.append(1)
+                        else:
+                            accessCaptionSubvector.append(0)
+                        if "sunglasses" in accessibilityCaption:
+                            featureVector.append(1)
+                        else:
+                            accessCaptionSubvector.append(0)
+                        if "on" in accessibilityCaption:
+                            featureVector.append(1)
+                        else:
+                            accessCaptionSubvector.append(0)
+                        if "grass" in accessibilityCaption:
+                            featureVector.append(1)
+                        else:
+                            accessCaptionSubvector.append(0)
+                        if "suit" in accessibilityCaption:
+                            featureVector.append(1)
+                        else:
+                            accessCaptionSubvector.append(0)
+                        if "selfie" in accessibilityCaption:
+                            featureVector.append(1)
+                        else:
+                            accessCaptionSubvector.append(0)
+                        if "crowd" in accessibilityCaption:
+                            featureVector.append(1)
+                        else:
+                            accessCaptionSubvector.append(0)
+                        if "1" in accessibilityCaption:
+                            featureVector.append(1)
+                        else:
+                            accessCaptionSubvector.append(0)
+                        if "person" in accessibilityCaption:
+                            featureVector.append(1)
+                        else:
+                            accessCaptionSubvector.append(0)
+                        if "wedding" in accessibilityCaption:
+                            featureVector.append(1)
+                        else:
+                            accessCaptionSubvector.append(0)
+                        if "baby" in accessibilityCaption:
+                            featureVector.append(1)
+                        else:
+                            accessCaptionSubvector.append(0)
 
                     elif key == "imgUrl":
+                        order.append(key)
+                        continue
                         image = imageProcess.Image(row[key], True)
                         imageShape = image.getImageShape()
                         shapes.append((imageShape[0], imageShape[1]))
@@ -130,15 +385,26 @@ def extractFeaturesFromDataset(filename):
                         # featureVector.append(imageProcess.extractNumFaces(faceInfo))
                         # featureVector.append(imageProcess.extractTotalPercentAreaFaces(faceInfo))
                     elif key == "likeRatio": # we will append the result at the end
+                        order.append(key)
                         continue #allResults.append(float(row[key]))
-                    elif (key == "likeCount" or key == "commentCount" or key == "timestamp"):
-                        # featureVector.append(row[key])
+                    elif (key == "likeCount" or key == "commentCount"):
+                        order.append(key)
                         continue
+                        featureVector.append(row[key])
+                    elif (key == "isBusinessAcc"):
+                        order.append(key)
+                        featureVector.append(int(row[key]))
+                    elif (key == "isVerified"):
+                        order.append(key)
+                        featureVector.append(int(row[key]))
+                    elif (key == "hasChannel"):
+                        order.append(key)
+                        featureVector.append(int(row[key]))
+
                     # this should fail all the time we have a string as the value feature
                     # probably bad style but  python has no better way to check if 
                     # a string contains a float or not
                     else:
-                        continue
                         try:
                             val = float(row[key])
                             featureVector[key] = val
@@ -171,7 +437,6 @@ def extractFeaturesFromDataset(filename):
         np.save(f"allResults_{filename[slashIndex:-4]}.npy", allResults)
         np.save(f"featureVectors_{filename[slashIndex:-4]}.npy", featureVectors)
         return allImgs, featureVectors, allResults
-
 
 
 def trainModel(modelfilename, x_train, y_train, x_test, y_test, concat=False):
