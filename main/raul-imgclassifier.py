@@ -158,11 +158,12 @@ def extractFeaturesFromDataset(filename):
         featureVectors = np.array(featureVectors)
         allResults = np.array(allResults)
         allImgs = np.array(allImgs)
+
         plt.figure()    
-        plt.plot(shapes)
         plt.title('image shape distribution')
         plt.ylabel('width')
         plt.xlabel('height')
+        plt.scatter(*zip(*shapes))
         plt.savefig(f"datasets/{filename[slashIndex:-4]}_distribution.png")
         np.save(f"allImgs_{filename[slashIndex:-4]}.npy", allImgs)
         np.save(f"allResults_{filename[slashIndex:-4]}.npy", allResults)
@@ -196,25 +197,25 @@ def trainModel(modelfilename, x_train, y_train, x_test, y_test, concat=False):
     # model.add(BatchNormalization())
     model.add(Conv2D(32, kernel_size=(3,3), activation='relu'))
     model.add(MaxPooling2D(pool_size=(2, 2)))
-    # model.add(BatchNormalization())
-    model.add(Conv2D(64, kernel_size=(3,3), activation='relu'))
-    model.add(MaxPooling2D(pool_size=(2, 2)))
-    # model.add(BatchNormalization())
-    model.add(Conv2D(128, kernel_size=(3,3), activation='relu'))
-    model.add(MaxPooling2D(pool_size=(2, 2)))
+    # # model.add(BatchNormalization())
+    # model.add(Conv2D(64, kernel_size=(3,3), activation='relu'))
+    # model.add(MaxPooling2D(pool_size=(2, 2)))
+    # # model.add(BatchNormalization())
+    # model.add(Conv2D(128, kernel_size=(3,3), activation='relu'))
+    # model.add(MaxPooling2D(pool_size=(2, 2)))
     # model.add(BatchNormalization())
     model.add(Flatten())
     model.add(Dense(1250, activation='relu'))
     model.add(Dropout(.5))
     # model.add(BatchNormalization())
-    model.add(Dense(250, activation='relu'))
+    model.add(Dense(500, activation='relu'))
     model.add(Dropout(.25))
     # model.add(BatchNormalization())
-    model.add(Dense(25, activation='relu'))
+    model.add(Dense(500, activation='relu'))
     # model.add(BatchNormalization())
 
     if concat:
-        model.add(Dense(4, activation = 'relu'))
+        model.add(Dense(100, activation = 'relu'))
         return model
     else:
         model.add(Dense(100, activation = 'softmax'))
@@ -265,12 +266,12 @@ def trainMdModel(modelfilename, x_train, y_train, x_test, y_test, concat=False):
     model = Sequential()
 
     model = Sequential()
-    model.add(Dense(64, input_dim=10, activation="relu"))
-    model.add(Dense(32, activation="relu"))
-    model.add(Dense(16, activation="relu"))
-    model.add(Dense(8, activation="relu"))
+    model.add(Dense(400, input_dim=10, activation="relu"))
+    model.add(Dense(300, activation="relu"))
+    model.add(Dense(300, activation="relu"))
+    model.add(Dense(200, activation="relu"))
     if concat:
-        model.add(Dense(4, activation = 'relu'))
+        model.add(Dense(100, activation = 'relu'))
         return model
     else:
         model.add(Dense(100, activation = 'softmax'))
@@ -404,8 +405,8 @@ def concatenatedModelMain():
         mdModel = trainMdModel(extractDatasetNameCSV(sys.argv[2]), mdX_train, mdY_train_one_hot, mdX_test, mdY_test_one_hot, True)
 
         combinedInput = concatenate([mdModel.output, imageModel.output])
-        x = Dense(4, activation="relu")(combinedInput)
-        x = Dense(1, activation="softmax")(x)
+        x = Dense(100, activation="relu")(combinedInput)
+        x = Dense(100, activation="softmax")(x)
         concatModel = Model(inputs=[mdModel.input, imageModel.input], outputs=x)
         concatModel.compile(optimizer=Adam(lr=1e-4, decay=1e-4 / 200), loss='categorical_crossentropy', metrics=['accuracy', 'cosine_proximity'])
         concatModel.fit([mdX_train, imgX_train], mdY_train,validation_data=([mdX_test, imgX_test], mdY_test), epochs=100, batch_size=8)
@@ -423,11 +424,11 @@ def concatenatedModelMain():
         mdModel = trainMdModel(extractDatasetNameCSV(sys.argv[2]), mdX_train, mdY_train_one_hot, mdX_test, mdY_test_one_hot, True)
 
         combinedInput = concatenate([mdModel.output, imageModel.output])
-        x = Dense(4, activation="relu")(combinedInput)
-        x = Dense(1, activation="softmax")(x)
+        x = Dense(250, activation="relu")(combinedInput)
+        x = Dense(100, activation="softmax")(x)
         concatModel = Model(inputs=[mdModel.input, imageModel.input], outputs=x)
         plot_model(concatModel, to_file=f"models/concatModel_plot.png", show_shapes=True, show_layer_names=True)
-        concatModel.compile(optimizer=Adam(lr=1e-4, decay=1e-4 / 200), loss='mean_squared_error', metrics=['accuracy', 'cosine_proximity'])
+        concatModel.compile(optimizer=Adam(lr=1e-4, decay=1e-4 / 200), loss='categorical_crossentropy', metrics=['accuracy', 'cosine_proximity'])
         concatModel.fit([mdX_train, imgX_train], mdY_train,validation_data=([mdX_test, imgX_test], mdY_test), epochs=100, batch_size=8)
 
         # try:
@@ -443,49 +444,6 @@ def concatenatedModelMain():
     # split_result_test = splitList(y_test, 10)   
     # for i in range(len(split_result_test)):
     #     test_model(model, split_test_set[i], split_result_test[i])
-
-##########################
-####    DUMPSTER    ######
-##########################
-def trainModelFeatureVec(modelfilename, x_train, y_train, x_test, y_test):
-    #create model
-    model = Sequential()
-    model.add(Dense(64, input_dim=46, activation="relu"))
-    model.add(Dense(32, activation="relu"))
-    model.add(Dense(16, activation="relu"))
-    model.add(Dense(8, activation="relu"))
-    model.add(Dense(4, activation="relu"))
-
-    #compile model using accuracy to measure model performance
-    model.compile(optimizer='adam', loss='categorical_crossentropy', metrics=['accuracy'])
-
-    #train the model
-    history = model.fit(x_train, y_train, validation_data=(x_test, y_test), epochs=15)
-
-    print(model.summary())
-
-    plot_model(model, to_file=f"models/featureVec_{modelfilename}_plot.png", show_shapes=True, show_layer_names=True)
-
-    plt.figure()
-    plt.plot(history.history['accuracy'])
-    plt.plot(history.history['val_accuracy'])
-    plt.title('model accuracy')
-    plt.ylabel('accuracy')
-    plt.xlabel('epoch')
-    plt.legend(['train', 'validation'], loc='upper left')
-    plt.savefig(f"models/featureVec_{modelfilename}_accuracy.png")
-
-    plt.figure()
-    plt.plot(history.history['loss'])
-    plt.plot(history.history['val_loss'])
-    plt.title('model loss')
-    plt.ylabel('loss')
-    plt.xlabel('epoch')
-    plt.legend(['train', 'validation'], loc='upper left')
-    plt.savefig(f"models/featureVec_{modelfilename}_loss.png")
-
-    model.save(f"models/featureVec_{modelfilename}.h5")
-    return model
 
 def oldmain():
     if (len(sys.argv) < 2):
@@ -520,4 +478,4 @@ def oldmain():
     #     test_model(model, split_test_set[i], split_result_test[i])
 
 if __name__ == "__main__":
-    concatenatedModelMain()
+    oldmain()
