@@ -1,6 +1,7 @@
 *.npy
 *.h5
 *.pyc
+main/.DS_Store
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
