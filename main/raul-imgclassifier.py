@@ -187,16 +187,20 @@ def extractFeaturesFromDataset(filename):
         notProcessed = 0
         totalImgs = 0
         correctShape = 0
+        a = True
         for row in csv.DictReader(f):
+            if a:
+                print(row.keys())
+                a = False
             print(totalImgs)
             totalImgs += 1
             featureVector = []
             somethingFailed = False
-            order = []
+            
             for key in row: #  each row is a dict
                 try:
                     if (key == "timestamp"): 
-                        order.append(key)
+
                         hourOfDay = datetime.fromtimestamp(int(row[key])).hour
                         between2and6 = (hourOfDay >= 2 and hourOfDay < 6)
                         between6and10 = (hourOfDay >= 6 and hourOfDay < 10)
@@ -239,13 +243,12 @@ def extractFeaturesFromDataset(filename):
                         if dayOfWeek == "Saturday":
                             featureVector.append(1)
                         else:
-                            featureVector.append(0)
-
-                        activenessScore 
+                            featureVector.append(0) 
                 
                     
                     elif (key == "accessibilityCaption"):
-                        order.append(key)
+
+                        accessibilityCaption = row[key]
                         if "people" in accessibilityCaption:
                             featureVector.append(1)
                         else:
@@ -253,127 +256,125 @@ def extractFeaturesFromDataset(filename):
                         if "and" in accessibilityCaption:
                             featureVector.append(1)
                         else:
-                            accessCaptionSubvector.append(0)
+                            featureVector.append(0)
                         if "one" in accessibilityCaption:
                             featureVector.append(1)
                         else:
-                            accessCaptionSubvector.append(0)
+                            featureVector.append(0)
                         if "or" in accessibilityCaption:
                             featureVector.append(1)
                         else:
-                            accessCaptionSubvector.append(0)
+                            featureVector.append(0)
                         if "more" in accessibilityCaption:
                             featureVector.append(1)
                         else:
-                            accessCaptionSubvector.append(0)
+                            featureVector.append(0)
                         if "standing" in accessibilityCaption:
                             featureVector.append(1)
                         else:
-                            accessCaptionSubvector.append(0)
+                            featureVector.append(0)
                         if "nature" in accessibilityCaption:
                             featureVector.append(1)
                         else:
-                            accessCaptionSubvector.append(0)
+                            featureVector.append(0)
                         if "closeup" in accessibilityCaption:
                             featureVector.append(1)
                         else:
-                            accessCaptionSubvector.append(0)
+                            featureVector.append(0)
                         if "sitting" in accessibilityCaption:
                             featureVector.append(1)
                         else:
-                            accessCaptionSubvector.append(0)
+                            featureVector.append(0)
                         if "tree" in accessibilityCaption:
                             featureVector.append(1)
                         else:
-                            accessCaptionSubvector.append(0)
+                            featureVector.append(0)
                         if "photo" in accessibilityCaption:
                             featureVector.append(1)
                         else:
-                            accessCaptionSubvector.append(0)
+                            featureVector.append(0)
                         if "no" in accessibilityCaption:
                             featureVector.append(1)
                         else:
-                            accessCaptionSubvector.append(0)
+                            featureVector.append(0)
                         if "description" in accessibilityCaption:
                             featureVector.append(1)
                         else:
-                            accessCaptionSubvector.append(0)
+                            featureVector.append(0)
                         if "available" in accessibilityCaption:
                             featureVector.append(1)
                         else:
-                            accessCaptionSubvector.append(0)
+                            featureVector.append(0)
                         if "cloud" in accessibilityCaption:
                             featureVector.append(1)
                         else:
-                            accessCaptionSubvector.append(0)
+                            featureVector.append(0)
                         if "beard" in accessibilityCaption:
                             featureVector.append(1)
                         else:
-                            accessCaptionSubvector.append(0)
+                            featureVector.append(0)
                         if "mountain" in accessibilityCaption:
                             featureVector.append(1)
                         else:
-                            accessCaptionSubvector.append(0)
+                            featureVector.append(0)
                         if "child" in accessibilityCaption:
                             featureVector.append(1)
                         else:
-                            accessCaptionSubvector.append(0)
+                            featureVector.append(0)
                         if "playing" in accessibilityCaption:
                             featureVector.append(1)
                         else:
-                            accessCaptionSubvector.append(0)
+                            featureVector.append(0)
                         if "sports" in accessibilityCaption:
                             featureVector.append(1)
                         else:
-                            accessCaptionSubvector.append(0)
+                            featureVector.append(0)
                         if "sunglasses" in accessibilityCaption:
                             featureVector.append(1)
                         else:
-                            accessCaptionSubvector.append(0)
+                            featureVector.append(0)
                         if "on" in accessibilityCaption:
                             featureVector.append(1)
                         else:
-                            accessCaptionSubvector.append(0)
+                            featureVector.append(0)
                         if "grass" in accessibilityCaption:
                             featureVector.append(1)
                         else:
-                            accessCaptionSubvector.append(0)
+                            featureVector.append(0)
                         if "suit" in accessibilityCaption:
                             featureVector.append(1)
                         else:
-                            accessCaptionSubvector.append(0)
+                            featureVector.append(0)
                         if "selfie" in accessibilityCaption:
                             featureVector.append(1)
                         else:
-                            accessCaptionSubvector.append(0)
+                            featureVector.append(0)
                         if "crowd" in accessibilityCaption:
                             featureVector.append(1)
                         else:
-                            accessCaptionSubvector.append(0)
+                            featureVector.append(0)
                         if "1" in accessibilityCaption:
                             featureVector.append(1)
                         else:
-                            accessCaptionSubvector.append(0)
+                            featureVector.append(0)
                         if "person" in accessibilityCaption:
                             featureVector.append(1)
                         else:
-                            accessCaptionSubvector.append(0)
+                            featureVector.append(0)
                         if "wedding" in accessibilityCaption:
                             featureVector.append(1)
                         else:
-                            accessCaptionSubvector.append(0)
+                            featureVector.append(0)
                         if "baby" in accessibilityCaption:
                             featureVector.append(1)
                         else:
-                            accessCaptionSubvector.append(0)
+                            featureVector.append(0)
 
                     elif key == "imgUrl":
-                        order.append(key)
-                        continue
+
                         image = imageProcess.Image(row[key], True)
                         imageShape = image.getImageShape()
                         shapes.append((imageShape[0], imageShape[1]))
-                        print(f"shape: ({imageShape[0]}, {imageShape[1]})")
                         # squaredImage = imageShape[0] == imageShape[1]
                         # isRgb = imageShape[2] == 3;
                         # if (not squaredImage) or (not isRgb):    
@@ -385,21 +386,18 @@ def extractFeaturesFromDataset(filename):
                         # featureVector.append(imageProcess.extractNumFaces(faceInfo))
                         # featureVector.append(imageProcess.extractTotalPercentAreaFaces(faceInfo))
                     elif key == "likeRatio": # we will append the result at the end
-                        order.append(key)
+
                         continue #allResults.append(float(row[key]))
                     elif (key == "likeCount" or key == "commentCount"):
-                        order.append(key)
+
                         continue
                         featureVector.append(row[key])
                     elif (key == "isBusinessAcc"):
-                        order.append(key)
-                        featureVector.append(int(row[key]))
+                        featureVector.append(int(row[key]=="True"))
                     elif (key == "isVerified"):
-                        order.append(key)
-                        featureVector.append(int(row[key]))
+                        featureVector.append(int(row[key]=="True"))
                     elif (key == "hasChannel"):
-                        order.append(key)
-                        featureVector.append(int(row[key]))
+                        featureVector.append(int(row[key]=="True"))
 
                     # this should fail all the time we have a string as the value feature
                     # probably bad style but  python has no better way to check if 
@@ -417,7 +415,7 @@ def extractFeaturesFromDataset(filename):
                     break
             if (somethingFailed):
                 continue
-            label = float(row["likeRatio"])
+            label = float(row["likeCount"])/float(row["userAverageLikes"])
             allResults.append(label)
             allImgs.append(image_rescaled)
             featureVectors.append(featureVector)
@@ -458,7 +456,7 @@ def trainModel(modelfilename, x_train, y_train, x_test, y_test, concat=False):
     model.add(Dropout(.25))
 
     if concat:
-        model.add(Dense(10, activation='relu'))
+        model.add(Dense(100, activation='relu'))
         return model
     else:
         model.add(Dense(4, activation = 'softmax'))
@@ -508,13 +506,13 @@ def trainMdModel(modelfilename, x_train, y_train, x_test, y_test, concat=False):
     #create model
     model = Sequential()
 
-    model.add(Dense(200, input_dim=8, activation="relu"))
+    model.add(Dense(200, input_dim=46, activation="relu"))
     model.add(Dense(150, activation="relu"))
     model.add(Dense(125, activation="relu"))
     model.add(Dense(110, activation="relu"))
     model.add(Dense(105, activation="relu"))
     if concat:
-        model.add(Dense(10, activation = "relu"))
+        model.add(Dense(100, activation = "relu"))
         return model
     else:
         model.add(Dense(4, activation = 'softmax'))
@@ -634,6 +632,7 @@ def predict(model, x_dev, y_dev):
 
 
 def concatenatedModelMain():
+    modelfilename = "concatModel"
     if (len(sys.argv) < 2):
         print("Don't forget the flag!")
         sys.exit(0)
@@ -650,8 +649,8 @@ def concatenatedModelMain():
 
         combinedInput = concatenate([mdModel.output, imageModel.output])
 
-        x = Dense(10, activation="relu")(combinedInput)
-        x = Dense(10, activation="softmax")(x)
+        x = Dense(30, activation="relu")(combinedInput)
+        x = Dense(30, activation="softmax")(x)
         concatModel = Model(inputs=[mdModel.input, imageModel.input], outputs=x)
         concatModel.compile(optimizer=Adam(lr=1e-4, decay=1e-4 / 200), loss='categorical_crossentropy', metrics=['accuracy'])
         history  = concatModel.fit([mdX_train, imgX_train], imgY_train_one_hot,validation_data=([mdX_test, imgX_test], imgY_test_one_hot), epochs=100, batch_size=8)
@@ -682,7 +681,7 @@ def concatenatedModelMain():
         plt.legend(['train', 'validation'], loc='upper left')
         plt.savefig(f"models/concat_{modelfilename}_loss.png")
 
-        model.save(f"models/concat_{modelfilename}.h5")
+        concatModel.save(f"models/concat_{modelfilename}.h5")
 
 
     elif (sys.argv[1] == "-f"):
@@ -699,8 +698,8 @@ def concatenatedModelMain():
 
         combinedInput = concatenate([mdModel.output, imageModel.output])
 
-        x = Dense(10, activation="relu")(combinedInput)
-        x = Dense(10, activation="softmax")(x)
+        x = Dense(100, activation="relu")(combinedInput)
+        x = Dense(100, activation="softmax")(x)
         concatModel = Model(inputs=[mdModel.input, imageModel.input], outputs=x)
         concatModel.compile(optimizer=Adam(lr=1e-4, decay=1e-4 / 200), loss='categorical_crossentropy', metrics=['accuracy'])
         history  = concatModel.fit([mdX_train, imgX_train], imgY_train_one_hot,validation_data=([mdX_test, imgX_test], imgY_test_one_hot), epochs=100, batch_size=8)
@@ -731,7 +730,7 @@ def concatenatedModelMain():
         plt.legend(['train', 'validation'], loc='upper left')
         plt.savefig(f"models/concat_{modelfilename}_loss.png")
 
-        model.save(f"models/concat_{modelfilename}.h5")
+        concatModel.save(f"models/concat_{modelfilename}.h5")
         # try:
         #     if(sys.argv[4] == "-m"):
         #         model = load_model(sys.argv[5])

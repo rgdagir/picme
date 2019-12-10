@@ -1,6 +1,7 @@
 import numpy as np
 import math
 from skimage.color import rgb2gray
+from datetime import datetime
 
 def ep_to_day(ep):
     return datetime.fromtimestamp(ep/1000).strftime("%A")
@@ -28,9 +29,9 @@ def loadFromFile(files):
 def oneHotEncoding(arr):
     oneHots = []
     for y in arr:
-        index = int(-math.log(y))%10
+        index = int(y*100)%100
         oneHot = []
-        for i in range(10):
+        for i in range(100):
             oneHot.append(0 if i != index else 1)
         oneHots.append(oneHot)
     return np.array(oneHots)
