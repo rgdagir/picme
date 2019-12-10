@@ -2,6 +2,9 @@ import numpy as np
 import math
 from skimage.color import rgb2gray
 
+def ep_to_day(ep):
+    return datetime.fromtimestamp(ep/1000).strftime("%A")
+
 def splitAndPrep(allImgs, allResults):
     # print("shuffling and splitting dataset...")
     # zipped = list(zip(allImgs, allResults))
