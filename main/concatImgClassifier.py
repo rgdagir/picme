@@ -18,6 +18,7 @@ from utils import *
 
 TARGET_X = 135
 TARGET_Y = 135
+BUCKET_NUM = 20
 
 def downloadImages(dataset):
     print('Start reading features')
@@ -63,114 +64,7 @@ def downloadImages(dataset):
     np.save(f"allResults_{dataset[slashIndex:-4]}.npy", allResults)
     return allImgs, allResults
 
-# ############################################################
-# # Feature extraction
-# def extractFeaturesFromDataset(filename):
-#     print("PELE MEJOR QUE MARADONA!")
-#     net = imageProcess.runFaceDetectDNN()
-#     print('Start reading features')
-#     with open(filename) as f:
-#         featureVectors = []
-#         results = []
-#         allImgs = []
-#         allResults = []
-#         shapes = []
-#         notProcessed = 0
-#         totalImgs = 0
-#         correctShape = 0
-#         for row in csv.DictReader(f):
-#             if (float(row["likeRatio"]) > 1.):
-#                 continue
-#             print(totalImgs)
-#             totalImgs += 1
-#             featureVector = []
-#             somethingFailed = False
-#             for key in row: #  each row is a dict
-#                 try:
-#                     if (key == "timestamp"): 
-#                         hourOfDay = datetime.fromtimestamp(int(row[key])).hour
-#                         between2and6 = (hourOfDay >= 2 and hourOfDay < 6)
-#                         between6and10 = (hourOfDay >= 6 and hourOfDay < 10)
-#                         between10and14 = (hourOfDay >= 10 and hourOfDay < 14)
-#                         between14and18 = (hourOfDay >= 14 and hourOfDay < 18)
-#                         between18and22 = (hourOfDay >= 18 and hourOfDay < 22)
-#                         between22and2 = (hourOfDay >= 22) or (hourOfDay < 2)
-#                         featureVector.append(int(between2and6))
-#                         featureVector.append(int(between6and10))
-#                         # featureVector['between10and14'] = int(between10and14)
-#                         featureVector.append(int(between14and18)) 
-#                         featureVector.append(int(between18and22))
-#                         featureVector.append(int(between22and2))
-                
-                    
-#                     elif (key == "caption"):
-#                         # featureVector["captionLength"] = (len(row[key]))
-#                         featureVector.append(1 if "food" in row[key].lower() else 0)
-#                         featureVector.append(1 if "follow" in row[key].lower() else 0)
-#                         featureVector.append(1 if "ad" in row[key].lower() else 0)
-                    
-#                     # if key == "hashtags":
-#                     #     hashtags = ast.literal_eval(row[key])
-#                     #     hashtags = [n.strip() for n in hashtags]
-#                         # featureVector["numHash"] = 1 if len(hashtags) == 0 else 1./len(hashtags)
 
-#                     elif key == "imgUrl":
-#                         image = imageProcess.Image(row[key], True)
-#                         imageShape = image.getImageShape()
-#                         shapes.append((imageShape[0], imageShape[1]))
-#                         print(f"shape: ({imageShape[0]}, {imageShape[1]})")
-#                         # squaredImage = imageShape[0] == imageShape[1]
-#                         # isRgb = imageShape[2] == 3;
-#                         # if (not squaredImage) or (not isRgb):    
-#                         #     continue
-#                         # image_rescaled = rescale(image.skimageImage, RESIZE_FACTOR, anti_aliasing=False, multichannel=True)
-#                         image_rescaled = resize(image.skimageImage, (TARGET_X, TARGET_Y),anti_aliasing=False)
-#                         # featureVector.append(imageProcess.extractSectorsFeature(image, 20, 20))
-#                         # faceInfo = imageProcess.extractFaceInfo(image, net)
-#                         # featureVector.append(imageProcess.extractNumFaces(faceInfo))
-#                         # featureVector.append(imageProcess.extractTotalPercentAreaFaces(faceInfo))
-#                     elif key == "likeRatio": # we will append the result at the end
-#                         continue #allResults.append(float(row[key]))
-#                     elif (key == "likeCount" or key == "commentCount" or key == "timestamp"):
-#                         # featureVector.append(row[key])
-#                         continue
-#                     # this should fail all the time we have a string as the value feature
-#                     # probably bad style but  python has no better way to check if 
-#                     # a string contains a float or not
-#                     else:
-#                         continue
-#                         try:
-#                             val = float(row[key])
-#                             featureVector[key] = val
-#                         except Exception as e:
-#                             continue
-#                 except Exception as e:
-#                     somethingFailed = True
-#                     notProcessed += 1
-#                     print(e)
-#                     break
-#             if (somethingFailed):
-#                 continue
-#             label = float(row["likeRatio"])
-#             allResults.append(label)
-#             allImgs.append(image_rescaled)
-#             featureVectors.append(featureVector)
-#         slashIndex = filename.find("/")
-#         slashIndex += 1
-#         featureVectors = np.array(featureVectors)
-#         allResults = np.array(allResults)
-#         allImgs = np.array(allImgs)
-
-#         plt.figure()    
-#         plt.title('image shape distribution')
-#         plt.ylabel('width')
-#         plt.xlabel('height')
-#         plt.scatter(*zip(*shapes))
-#         plt.savefig(f"datasets/{filename[slashIndex:-4]}_distribution.png")
-#         np.save(f"allImgs_{filename[slashIndex:-4]}.npy", allImgs)
-#         np.save(f"allResults_{filename[slashIndex:-4]}.npy", allResults)
-#         np.save(f"featureVectors_{filename[slashIndex:-4]}.npy", featureVectors)
-#         return allImgs, featureVectors, allResults
 ######################
 # Feature extraction #
 ######################
@@ -456,14 +350,14 @@ def trainModel(modelfilename, x_train, y_train, x_test, y_test, concat=False):
     model.add(Dropout(.25))
 
     if concat:
-        model.add(Dense(100, activation='relu'))
+        model.add(Dense(BUCKET_NUM, activation='relu'))
         return model
     else:
-        model.add(Dense(4, activation = 'softmax'))
+        model.add(Dense(BUCKET_NUM, activation = 'softmax'))
 
     es = EarlyStopping(monitor='val_loss', mode='min', verbose=1)
     #compile model using accuracy to measure model performance
-    model.compile(optimizer=Adam(lr=1e-4, decay=1e-4 / 200), loss='categorical_crossentropy', metrics=['accuracy', 'cosine_proximity'])
+    model.compile(optimizer=Adam(lr=1e-4, decay=1e-4 / 200), loss='categorical_crossentropy', metrics=['accuracy'])
 
     #train the model
     history = model.fit(x_train, y_train, validation_data=(x_test, y_test), epochs=50)
@@ -512,14 +406,14 @@ def trainMdModel(modelfilename, x_train, y_train, x_test, y_test, concat=False):
     model.add(Dense(110, activation="relu"))
     model.add(Dense(105, activation="relu"))
     if concat:
-        model.add(Dense(100, activation = "relu"))
+        model.add(Dense(BUCKET_NUM, activation = "relu"))
         return model
     else:
-        model.add(Dense(4, activation = 'softmax'))
+        model.add(Dense(BUCKET_NUM, activation = 'softmax'))
 
     es = EarlyStopping(monitor='val_loss', mode='min', verbose=1)
     #compile model using accuracy to measure model performance
-    model.compile(optimizer=Adam(lr=1e-4, decay=1e-4 / 200), loss='categorical_crossentropy', metrics=['accuracy', 'cosine_proximity'])
+    model.compile(optimizer=Adam(lr=1e-4, decay=1e-4 / 200), loss='categorical_crossentropy', metrics=['accuracy'])
 
     #train the model
     history = model.fit(x_train, y_train, validation_data=(x_test, y_test), epochs=50)
@@ -605,31 +499,10 @@ def predict(model, x_dev, y_dev):
     print(f"predictedImageIndex: {predictedImageIndex}")
     plt.figure()
     plt.imshow(x_dev[predictedImageIndex])
-    
-    #  # WRONG - USE PHIL'S VERSION ABOVE
-    # maxBucket = 0 
-    # maxProbsForMaxBucket = 0.0
-    # predictedImageIndex = 0
-    # for i in range(len(predictions)):
-    #     prediction = predictions[i]
-    #     maxResultIndex = np.argmax(prediction)
-    #     maxResult = prediction[maxResultIndex]
-    #     if maxBucket <= maxResultIndex:
-    #         maxBucket = maxResultIndex
-    #         maxProbsForMaxBucket = maxResult
-    #         predictedImageIndex = i
-    #     elif maxBucket == maxResultIndex:
-    #         if maxProbsForMaxBucket < maxResult:
-    #             maxProbsForMaxBucket = maxResult
-    #             predictedImageIndex = i
-    # print(f"predictedImageIndex: {predictedImageIndex}")
-    # plt.figure()
-    # plt.imshow(x_dev[predictedImageIndex])
 
     plt.figure()
     plt.imshow(x_dev[actualBestImageIndex])
     plt.show()
-
 
 def concatenatedModelMain():
     modelfilename = "concatModel"
@@ -649,8 +522,8 @@ def concatenatedModelMain():
 
         combinedInput = concatenate([mdModel.output, imageModel.output])
 
-        x = Dense(30, activation="relu")(combinedInput)
-        x = Dense(30, activation="softmax")(x)
+        x = Dense(BUCKET_NUM, activation="relu")(combinedInput)
+        x = Dense(BUCKET_NUM, activation="softmax")(x)
         concatModel = Model(inputs=[mdModel.input, imageModel.input], outputs=x)
         concatModel.compile(optimizer=Adam(lr=1e-4, decay=1e-4 / 200), loss='categorical_crossentropy', metrics=['accuracy'])
         history  = concatModel.fit([mdX_train, imgX_train], imgY_train_one_hot,validation_data=([mdX_test, imgX_test], imgY_test_one_hot), epochs=100, batch_size=8)
@@ -698,8 +571,8 @@ def concatenatedModelMain():
 
         combinedInput = concatenate([mdModel.output, imageModel.output])
 
-        x = Dense(100, activation="relu")(combinedInput)
-        x = Dense(100, activation="softmax")(x)
+        x = Dense(BUCKET_NUM, activation="relu")(combinedInput)
+        x = Dense(BUCKET_NUM, activation="softmax")(x)
         concatModel = Model(inputs=[mdModel.input, imageModel.input], outputs=x)
         concatModel.compile(optimizer=Adam(lr=1e-4, decay=1e-4 / 200), loss='categorical_crossentropy', metrics=['accuracy'])
         history  = concatModel.fit([mdX_train, imgX_train], imgY_train_one_hot,validation_data=([mdX_test, imgX_test], imgY_test_one_hot), epochs=100, batch_size=8)
@@ -740,38 +613,6 @@ def concatenatedModelMain():
         print("Invalid flag, mate!")
         sys.exit(0)
     # TODO uncomment below later    
-    # split_test_set = splitList(x_test, 10)
-    # split_result_test = splitList(y_test, 10)   
-    # for i in range(len(split_result_test)):
-    #     test_model(model, split_test_set[i], split_result_test[i])
-
-def oldmain():
-    if (len(sys.argv) < 2):
-        print("Don't forget the flag!")
-        sys.exit(0)
-    if (sys.argv[1] == "--full"):
-        # featureVectors, results = extractFeaturesFromDataset(sys.argv[2])
-        featureVectors, results = loadFromFile([sys.argv[2], sys.argv[3]])
-        x_train, x_dev, x_test, y_train, y_dev, y_test, y_train_one_hot, y_test_one_hot = splitAndPrep(featureVectors, results)
-        model = trainModelFeatureVec("featuresvectormodel", x_train, y_train_one_hot, x_test, y_test_one_hot)
-    elif (sys.argv[1] == "-d"):
-        allImgs, allResults = downloadImages(sys.argv[2])
-        x_train, x_dev, x_test, y_train, y_dev, y_test, y_train_one_hot, y_test_one_hot = splitAndPrep(allImgs, allResults)
-        # x_train = x_train.reshape(x_train.shape[0], TARGET_X, TARGET_Y, 1)
-        # x_test = x_test.reshape(x_test.shape[0], TARGET_X, TARGET_Y, 3)
-        model = trainModel(extractDatasetNameCSV(sys.argv[2]), x_train, y_train_one_hot, x_test, y_test_one_hot)
-    elif (sys.argv[1] == "-f"):
-        allImgs, allResults = loadFromFile([sys.argv[2], sys.argv[3]])
-        # allImgs = grayscaleResize(allImgs)
-        x_train, x_dev, x_test, y_train, y_dev, y_test, y_train_one_hot, y_test_one_hot = splitAndPrep(allImgs, allResults)        
-        try:
-            if(sys.argv[4] == "-m"):
-                model = load_model(sys.argv[5])
-        except:
-            model = trainModel(extractDatasetNameNPY(sys.argv[2]), x_train, y_train_one_hot, x_test, y_test_one_hot)    
-    else:
-        print("Invalid flag, mate!")
-        sys.exit(0)
     # split_test_set = splitList(x_test, 10)
     # split_result_test = splitList(y_test, 10)   
     # for i in range(len(split_result_test)):
