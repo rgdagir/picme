@@ -3,7 +3,7 @@ import math
 from skimage.color import rgb2gray
 from datetime import datetime
 
-BUCKET_NUM = 20
+BUCKET_NUM = 10
 
 def ep_to_day(ep):
     return datetime.fromtimestamp(ep/1000).strftime("%A")

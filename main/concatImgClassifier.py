@@ -18,7 +18,7 @@ from utils import *
 
 TARGET_X = 135
 TARGET_Y = 135
-BUCKET_NUM = 20
+BUCKET_NUM = 10
 
 def downloadImages(dataset):
     print('Start reading features')
@@ -64,10 +64,6 @@ def downloadImages(dataset):
     np.save(f"allResults_{dataset[slashIndex:-4]}.npy", allResults)
     return allImgs, allResults
 
-
-######################
-# Feature extraction #
-######################
 def extractFeaturesFromDataset(filename):
     print("PELE MEJOR QUE MARADONA!")
     # net = imageProcess.runFaceDetectDNN()
@@ -330,7 +326,6 @@ def extractFeaturesFromDataset(filename):
         np.save(f"featureVectors_{filename[slashIndex:-4]}.npy", featureVectors)
         return allImgs, featureVectors, allResults
 
-
 def trainModel(modelfilename, x_train, y_train, x_test, y_test, concat=False):
     #create model
     model = Sequential()
@@ -523,10 +518,10 @@ def concatenatedModelMain():
         combinedInput = concatenate([mdModel.output, imageModel.output])
 
         x = Dense(BUCKET_NUM, activation="relu")(combinedInput)
-        x = Dense(BUCKET_NUM, activation="softmax")(x)
+        x = Dense(1, activation="linear")(x)
         concatModel = Model(inputs=[mdModel.input, imageModel.input], outputs=x)
-        concatModel.compile(optimizer=Adam(lr=1e-4, decay=1e-4 / 200), loss='categorical_crossentropy', metrics=['accuracy'])
-        history  = concatModel.fit([mdX_train, imgX_train], imgY_train_one_hot,validation_data=([mdX_test, imgX_test], imgY_test_one_hot), epochs=100, batch_size=8)
+        concatModel.compile(optimizer=Adam(lr=1e-4, decay=1e-4 / 200), loss='mean_squared_error')
+        history  = concatModel.fit([mdX_train, imgX_train], imgY_train,validation_data=([mdX_test, imgX_test], imgY_test), epochs=100, batch_size=8)
         plt.figure()
         plt.plot(history.history['accuracy'])
         plt.plot(history.history['val_accuracy'])
@@ -572,10 +567,10 @@ def concatenatedModelMain():
         combinedInput = concatenate([mdModel.output, imageModel.output])
 
         x = Dense(BUCKET_NUM, activation="relu")(combinedInput)
-        x = Dense(BUCKET_NUM, activation="softmax")(x)
+        x = Dense(1, activation="linear")(x)
         concatModel = Model(inputs=[mdModel.input, imageModel.input], outputs=x)
-        concatModel.compile(optimizer=Adam(lr=1e-4, decay=1e-4 / 200), loss='categorical_crossentropy', metrics=['accuracy'])
-        history  = concatModel.fit([mdX_train, imgX_train], imgY_train_one_hot,validation_data=([mdX_test, imgX_test], imgY_test_one_hot), epochs=100, batch_size=8)
+        concatModel.compile(optimizer=Adam(lr=1e-4, decay=1e-4 / 200), loss='mean_squared_error')
+        history  = concatModel.fit([mdX_train, imgX_train], imgY_train,validation_data=([mdX_test, imgX_test], imgY_test), epochs=100, batch_size=8)
         plt.figure()
         plt.plot(history.history['accuracy'])
         plt.plot(history.history['val_accuracy'])
@@ -584,15 +579,6 @@ def concatenatedModelMain():
         plt.xlabel('epoch')
         plt.legend(['train', 'validation'], loc='upper left')
         plt.savefig(f"models/concat_{modelfilename}_accuracy.png")
-
-        plt.figure()
-        plt.plot(history.history['cosine_proximity'])
-        plt.plot(history.history['val_cosine_proximity'])
-        plt.title('cosine proximity')
-        plt.ylabel('accuracy')
-        plt.xlabel('epoch')
-        plt.legend(['train', 'validation'], loc='upper left')
-        plt.savefig(f"models/concat_{modelfilename}_cosineproximity.png")
 
         plt.figure()
         plt.plot(history.history['loss'])
