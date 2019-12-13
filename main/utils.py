@@ -2,6 +2,7 @@ import numpy as np
 import math
 from skimage.color import rgb2gray
 from datetime import datetime
+import textdistance
 
 BUCKET_NUM = 10
 
@@ -16,8 +17,8 @@ def splitAndPrep(allImgs, allResults):
     (x_train, x_dev, x_test), (y_train, y_dev, y_test) = splitDataset(allImgs, allResults)
 
     y_train_one_hot = oneHotEncoding(y_train)
-    y_test_one_hot = oneHotEncoding(y_test)
-    return x_train, x_dev, x_test, y_train, y_dev, y_test, y_train_one_hot, y_test_one_hot
+    y_dev_one_hot = oneHotEncoding(y_dev)
+    return x_train, x_dev, x_test, y_train, y_dev, y_test, y_train_one_hot, y_dev_one_hot
 
 def loadFromFile(files):
     out = []
@@ -46,7 +47,7 @@ def splitDataset(allImgs, allResults):
     prevy_test = np.array(allResults[limitTrain:])
     limitTest = int(len(prevx_test)/2)
     x_dev = np.array(prevx_test[limitTest:])
-    y_dev = np.array(prevy_test[:limitTest])
+    y_dev = np.array(prevy_test[limitTest:])
     x_test = np.array(prevx_test[:limitTest])
     y_test = np.array(prevy_test[:limitTest])
     # x_train = x_train.reshape(len(x_train),TARGET_X, TARGET_Y,1)
@@ -86,9 +87,9 @@ def grayscaleResize(allImgs):
 ############################################################################
 ##############################   DEPRECATED   ##############################
 ############################################################################
-##############################    Old Main    ##############################
+##############################      Main      ##############################
 ############################################################################
-def oldmain():
+def DEPRECATEDmain():
     if (len(sys.argv) < 2):
         print("Don't forget the flag!")
         sys.exit(0)
@@ -119,7 +120,6 @@ def oldmain():
     # split_result_test = splitList(y_test, 10)   
     # for i in range(len(split_result_test)):
     #     test_model(model, split_test_set[i], split_result_test[i])
-
 
 ############################################################################
 ##########################   Feature Extraction   ##########################
@@ -230,4 +230,60 @@ def DEPRECATEDextractFeaturesFromDataset(filename):
         np.save(f"allResults_{filename[slashIndex:-4]}.npy", allResults)
         np.save(f"featureVectors_{filename[slashIndex:-4]}.npy", featureVectors)
         return allImgs, featureVectors, allResults
-###############################################################################################
+
+############################################################################
+#######################   Homemade Rank Comparison   #######################
+############################################################################
+def DEPRECATEDhomemade_rank_compare(predictions, y, dataname):
+    indexed_y = list(enumerate(y))
+    indexed_y.sort(key=lambda tup: tup[1])
+    ideal_ranking = []
+    for elem in indexed_y:
+        ideal_ranking.append(elem[0])
+    scores = []
+    for prediction in predictions:
+        scores.append(np.dot(prediction, [i for i in range(1,101)]))
+    indexed_scores = list(enumerate(scores))
+    indexed_scores.sort(key=lambda tup: tup[1])
+    predicted_ranking = []
+    for elem in indexed_scores:
+        predicted_ranking.append(elem[0])
+    if (ideal_ranking == predicted_ranking):
+        print("Success! Prediction matched!")
+    else:
+        mistakes = 0
+        for i in range(len(ideal_ranking)):
+            if ideal_ranking[i] != predicted_ranking[i]:
+                mistakes += 1 
+        print(f"We made {mistakes} mistakes. Error ratio: {mistakes/len(ideal_ranking)}")
+        print(f"similarity: {textdistance.levenshtein.similarity(ideal_ranking,predicted_ranking)}")
+        print(f"distance: {textdistance.levenshtein.distance(ideal_ranking,predicted_ranking)}")
+    print(f"ideal_ranking:     {ideal_ranking}")
+    print(f"predicted_ranking: {predicted_ranking}\n\n")
+
+############################################################################
+###############################   Predict    ###############################
+############################################################################
+def DEPRECATEDpredictF(model, x_dev, y_dev):
+    print(f"y_dev: {y_dev}")
+    actualBestImageIndex = np.argmax(y_dev)
+
+    print(f"theoretical best image index: {actualBestImageIndex}")
+
+    predictions = model.predict(x_dev)
+
+    scores = []
+    for prediction in predictions:
+        scores.append(np.dot(prediction, [i for i in range(1,101)]))
+    scores = np.array(scores)
+    predictedImageIndex = np.argmax(scores)
+    print(f"scores: {scores}")
+    print(f"predictedImageIndex: {predictedImageIndex}")
+    plt.figure()
+    plt.imshow(x_dev[predictedImageIndex])
+
+    plt.figure()
+    plt.imshow(x_dev[actualBestImageIndex])
+    plt.show()
+
+############################################################################

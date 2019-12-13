@@ -11,14 +11,19 @@ import math
 from keras import regularizers
 import random
 from datetime import datetime 
-import textdistance
 from keras.utils.vis_utils import plot_model
 from keras.optimizers import Adam
 from utils import *
+from sklearn.metrics import r2_score
+from scipy.stats import spearmanr
+from statistics import mean
+from matplotlib.ticker import FormatStrFormatter
+
 
 TARGET_X = 135
 TARGET_Y = 135
 BUCKET_NUM = 10
+EPOCH_NUM = 6
 
 def downloadImages(dataset):
     print('Start reading features')
@@ -447,57 +452,67 @@ def trainMdModel(modelfilename, x_train, y_train, x_test, y_test, concat=False):
     model.save(f"models/{modelfilename}_metadata_plot.h5")
     return model
 
-def test_model(model, x, y):
-    indexed_y = list(enumerate(y))
-    indexed_y.sort(key=lambda tup: tup[1])
-    ideal_ranking = []
-    for elem in indexed_y:
-        ideal_ranking.append(elem[0])
-
+def test_model(model, x, y, dataname):
     predictions = model.predict(x)
+    hist_scatter(predictions, y, dataname)
+    spearman(predictions, y, dataname)
 
-    scores = []
-    for prediction in predictions:
-        scores.append(np.dot(prediction, [i for i in range(1,101)]))
-    indexed_scores = list(enumerate(scores))
-    indexed_scores.sort(key=lambda tup: tup[1])
-    predicted_ranking = []
-    for elem in indexed_scores:
-        predicted_ranking.append(elem[0])
-    if (ideal_ranking == predicted_ranking):
-        print("Success! Prediction matched!")
-    else:
-        mistakes = 0
-        for i in range(len(ideal_ranking)):
-            if ideal_ranking[i] != predicted_ranking[i]:
-                mistakes += 1 
-        print(f"We made {mistakes} mistakes. Error ratio: {mistakes/len(ideal_ranking)}")
-        print(f"similarity: {textdistance.levenshtein.similarity(ideal_ranking,predicted_ranking)}")
-        print(f"distance: {textdistance.levenshtein.distance(ideal_ranking,predicted_ranking)}")
-    print(f"ideal_ranking:     {ideal_ranking}")
-    print(f"predicted_ranking: {predicted_ranking}\n\n")
+def hist_scatter(predictions, y, dataname):
+    absdiff = 0
+    diffList = []
+    numThresh1 = 0
+    numThresh2 = 0
+    for i in range(len(y)):
+        err = abs(predictions[i]-y[i])
+        absdiff += err
+        diffList.append(err)
+        if err <= 0.4:
+            numThresh2 += 1
+            if err <= 0.2:
+                numThresh1 += 1
+    meanAbsPercentDiff = (100*absdiff)/(len(y)*sum(y))
+    print(f"Less than 0.2: {numThresh1}, Less than 0.4: {numThresh2}")
+    fig, axes = plt.subplots()
+    counts, bins, patches = axes.hist(np.array(diffList), 20, edgecolor='black')
+    bins = np.linspace(0,5,26)
+    print(bins)
+    axes.set_xticks(bins)
+    axes.set_xticklabels(bins, rotation=45)
+    axes.xaxis.set_major_formatter(FormatStrFormatter('%.2f'))
 
-def predict(model, x_dev, y_dev):
-    print(f"y_dev: {y_dev}")
-    actualBestImageIndex = np.argmax(y_dev)
-
-    print(f"theoretical best image index: {actualBestImageIndex}")
-
-    predictions = model.predict(x_dev)
-
-    scores = []
-    for prediction in predictions:
-        scores.append(np.dot(prediction, [i for i in range(1,101)]))
-    scores = np.array(scores)
-    predictedImageIndex = np.argmax(scores)
-    print(f"scores: {scores}")
-    print(f"predictedImageIndex: {predictedImageIndex}")
-    plt.figure()
-    plt.imshow(x_dev[predictedImageIndex])
+    axes.set_title('Histogram of |Predicted ratio - Actual ratio|')
+    axes.set_xlabel('Abs diff between prediction and true')
+    axes.set_ylabel('Count')
+    # plt.show()
+    plt.savefig(f"models/concatModel_{dataname}_hist.png", bbox_inches='tight')
 
     plt.figure()
-    plt.imshow(x_dev[actualBestImageIndex])
-    plt.show()
+    np_y = np.array(y)
+    np_predictions = np.array(predictions)
+    r2 = r2_score(np_y, np_predictions)
+    m, b =  np.polyfit(np_y, np_predictions, 1)
+    print(np.polyfit(np_y, np_predictions, 1))
+    print(np.polyfit(np_y, np_predictions, 1, full=True))
+    plt.scatter(np_y, np_predictions)
+    plt.plot(np_y, b + m*np_y, 'r-')
+    plt.title(f"{dataname}set Predicted vs True like:avg")
+    print(f"MAPE: {meanAbsPercentDiff}, r2: {r2}")
+    plt.ylabel('Predicted like:avg')
+    plt.xlabel('True like:avg')
+    plt.savefig(f"models/concatModel_{dataname}_comparison.png", bbox_inches='tight')
+
+def spearman(predictions, y, dataname):
+    avg_spearman = 0
+    spearmanList = []
+    for i in range(0,len(predictions),10):
+        if len(y[i:i+10]) > 1:
+            spearmanList.append(spearmanr(predictions[i:i+10], y[i:i+10]).correlation)
+    avg_spearman = mean(spearmanList)
+    print(f"Average Spearman RCC for 10-image batches: {avg_spearman}")
+
+    print(f"Spearman RCC for whole dataset: {spearmanr(predictions, y).correlation}")
+
+    # print(spearmanList)
 
 def concatenatedModelMain():
     modelfilename = "concatModel"
@@ -506,14 +521,14 @@ def concatenatedModelMain():
         sys.exit(0)
     if (sys.argv[1] == "-d"):
         allImgs, featureVectors, allResults = extractFeaturesFromDataset(sys.argv[2])
-        imgX_train, imgX_dev, imgX_test, imgY_train, imgY_dev, imgY_test, imgY_train_one_hot, imgY_test_one_hot = splitAndPrep(allImgs, allResults)
-        mdX_train, mdX_dev, mdX_test, mdY_train, mdY_dev, mdY_test, mdY_train_one_hot, mdY_test_one_hot = splitAndPrep(featureVectors, allResults)
+        imgX_train, imgX_dev, imgX_test, imgY_train, imgY_dev, imgY_test, imgY_train_one_hot, imgY_dev_one_hot = splitAndPrep(allImgs, allResults)
+        mdX_train, mdX_dev, mdX_test, mdY_train, mdY_dev, mdY_test, mdY_train_one_hot, mdY_dev_one_hot = splitAndPrep(featureVectors, allResults)
         # assert(imgY_train, mdY_train) # raul-imgclassifier.py:537: SyntaxWarning: assertion is always true, perhaps remove parentheses?
         # imgX_train = imgX_train.reshape(imgX_train.shape[0], TARGET_X, TARGET_Y, 3)
         # imgX_test = imgX_test.reshape(imgX_test.shape[0], TARGET_X, TARGET_Y, 3)
         
-        imageModel = trainModel(extractDatasetNameCSV(sys.argv[2]), imgX_train, imgY_train_one_hot, imgX_test, imgY_test_one_hot, True)
-        mdModel = trainMdModel(extractDatasetNameCSV(sys.argv[2]), mdX_train, mdY_train_one_hot, mdX_test, mdY_test_one_hot, True)
+        imageModel = trainModel(extractDatasetNameCSV(sys.argv[2]), imgX_train, imgY_train, imgX_dev, imgY_dev, True)
+        mdModel = trainMdModel(extractDatasetNameCSV(sys.argv[2]), mdX_train, mdY_train, mdX_dev, mdY_dev, True)
 
         combinedInput = concatenate([mdModel.output, imageModel.output])
 
@@ -521,24 +536,15 @@ def concatenatedModelMain():
         x = Dense(1, activation="linear")(x)
         concatModel = Model(inputs=[mdModel.input, imageModel.input], outputs=x)
         concatModel.compile(optimizer=Adam(lr=1e-4, decay=1e-4 / 200), loss='mean_squared_error')
-        history  = concatModel.fit([mdX_train, imgX_train], imgY_train,validation_data=([mdX_test, imgX_test], imgY_test), epochs=100, batch_size=8)
-        plt.figure()
-        plt.plot(history.history['accuracy'])
-        plt.plot(history.history['val_accuracy'])
-        plt.title('model accuracy')
-        plt.ylabel('accuracy')
-        plt.xlabel('epoch')
-        plt.legend(['train', 'validation'], loc='upper left')
-        plt.savefig(f"models/concat_{modelfilename}_accuracy.png")
-
-        plt.figure()
-        plt.plot(history.history['cosine_proximity'])
-        plt.plot(history.history['val_cosine_proximity'])
-        plt.title('cosine proximity')
-        plt.ylabel('accuracy')
-        plt.xlabel('epoch')
-        plt.legend(['train', 'validation'], loc='upper left')
-        plt.savefig(f"models/concat_{modelfilename}_cosineproximity.png")
+        history  = concatModel.fit([mdX_train, imgX_train], imgY_train,validation_data=([mdX_test, imgX_test], imgY_test), epochs=EPOCH_NUM, batch_size=8)
+        # plt.figure()
+        # plt.plot(history.history['accuracy'])
+        # plt.plot(history.history['val_accuracy'])
+        # plt.title('model accuracy')
+        # plt.ylabel('accuracy')
+        # plt.xlabel('epoch')
+        # plt.legend(['train', 'validation'], loc='upper left')
+        # plt.savefig(f"models/concat_{modelfilename}_accuracy.png")
 
         plt.figure()
         plt.plot(history.history['loss'])
@@ -556,13 +562,13 @@ def concatenatedModelMain():
         allImgs, allResults, featureVectors = loadFromFile([sys.argv[2], sys.argv[3], sys.argv[4]])
 
         # allImgs = grayscaleResize(allImgs)
-        imgX_train, imgX_dev, imgX_test, imgY_train, imgY_dev, imgY_test, imgY_train_one_hot, imgY_test_one_hot = splitAndPrep(allImgs, allResults)
-        mdX_train, mdX_dev, mdX_test, mdY_train, mdY_dev, mdY_test, mdY_train_one_hot, mdY_test_one_hot = splitAndPrep(featureVectors, allResults)
+        imgX_train, imgX_dev, imgX_test, imgY_train, imgY_dev, imgY_test, imgY_train_one_hot, imgY_dev_one_hot = splitAndPrep(allImgs, allResults)
+        mdX_train, mdX_dev, mdX_test, mdY_train, mdY_dev, mdY_test, mdY_train_one_hot, mdY_dev_one_hot = splitAndPrep(featureVectors, allResults)
         # assert(imgY_train, mdY_train) #raul-imgclassifier.py:537: SyntaxWarning: assertion is always true, perhaps remove parentheses?
         # imgX_train = imgX_train.reshape(imgX_train.shape[0], TARGET_X, TARGET_Y, 3)
         # imgX_test = imgX_test.reshape(imgX_test.shape[0], TARGET_X, TARGET_Y, 3)
-        imageModel = trainModel(extractDatasetNameCSV(sys.argv[2]), imgX_train, imgY_train_one_hot, imgX_test, imgY_test_one_hot, True)
-        mdModel = trainMdModel(extractDatasetNameCSV(sys.argv[2]), mdX_train, mdY_train_one_hot, mdX_test, mdY_test_one_hot, True)
+        imageModel = trainModel(extractDatasetNameCSV(sys.argv[2]), imgX_train, imgY_train, imgX_dev, imgY_dev, True)
+        mdModel = trainMdModel(extractDatasetNameCSV(sys.argv[2]), mdX_train, mdY_train, mdX_dev, mdY_dev, True)
 
         combinedInput = concatenate([mdModel.output, imageModel.output])
 
@@ -570,15 +576,15 @@ def concatenatedModelMain():
         x = Dense(1, activation="linear")(x)
         concatModel = Model(inputs=[mdModel.input, imageModel.input], outputs=x)
         concatModel.compile(optimizer=Adam(lr=1e-4, decay=1e-4 / 200), loss='mean_squared_error')
-        history  = concatModel.fit([mdX_train, imgX_train], imgY_train,validation_data=([mdX_test, imgX_test], imgY_test), epochs=100, batch_size=8)
-        plt.figure()
-        plt.plot(history.history['accuracy'])
-        plt.plot(history.history['val_accuracy'])
-        plt.title('model accuracy')
-        plt.ylabel('accuracy')
-        plt.xlabel('epoch')
-        plt.legend(['train', 'validation'], loc='upper left')
-        plt.savefig(f"models/concat_{modelfilename}_accuracy.png")
+        history = concatModel.fit([mdX_train, imgX_train], imgY_train, validation_data=([mdX_dev, imgX_dev], imgY_dev), epochs=EPOCH_NUM, batch_size=8)
+        # plt.figure()
+        # plt.plot(history.history['accuracy'])
+        # plt.plot(history.history['val_accuracy'])
+        # plt.title('model accuracy')
+        # plt.ylabel('accuracy')
+        # plt.xlabel('epoch')
+        # plt.legend(['train', 'validation'], loc='upper left')
+        # plt.savefig(f"models/concat_{modelfilename}_accuracy.png")
 
         plt.figure()
         plt.plot(history.history['loss'])
@@ -590,19 +596,28 @@ def concatenatedModelMain():
         plt.savefig(f"models/concat_{modelfilename}_loss.png")
 
         concatModel.save(f"models/concat_{modelfilename}.h5")
-        # try:
-        #     if(sys.argv[4] == "-m"):
-        #         model = load_model(sys.argv[5])
-        # except:
-        #     model = trainModel(extractDatasetNameNPY(sys.argv[2]), x_train, y_train_one_hot, x_test, y_test_one_hot)    
+        # Train accuracy
+        test_model(concatModel, [mdX_train, imgX_train], imgY_train, 'Train')
+
+        # Val Accuracy
+        test_model(concatModel, [mdX_dev, imgX_dev], imgY_dev, 'Dev')
+        
+        # Test Accuracy
+        test_model(concatModel, [mdX_test, imgX_test], imgY_test, 'Test')
+    
+    elif(sys.argv[1] == "-m"):
+        model = load_model(sys.argv[5])
+        allImgs, allResults, featureVectors = loadFromFile([sys.argv[2], sys.argv[3], sys.argv[4]])
+        imgX_train, imgX_dev, imgX_test, imgY_train, imgY_dev, imgY_test, imgY_train_one_hot, imgY_dev_one_hot = splitAndPrep(allImgs, allResults)
+        mdX_train, mdX_dev, mdX_test, mdY_train, mdY_dev, mdY_test, mdY_train_one_hot, mdY_dev_one_hot = splitAndPrep(featureVectors, allResults)
+        test_model(model, [mdX_train, imgX_train], imgY_train, 'Train')
+        test_model(model, [mdX_dev, imgX_dev], imgY_dev, 'Dev')
+        test_model(model, [mdX_test, imgX_test], imgY_test, 'Test')
     else:
         print("Invalid flag, mate!")
-        sys.exit(0)
-    # TODO uncomment below later    
-    # split_test_set = splitList(x_test, 10)
-    # split_result_test = splitList(y_test, 10)   
-    # for i in range(len(split_result_test)):
-    #     test_model(model, split_test_set[i], split_result_test[i])
+        sys.exit(0)  
+
+    
 
 if __name__ == "__main__":
     concatenatedModelMain()
